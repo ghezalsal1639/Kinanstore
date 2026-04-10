@@ -724,11 +724,17 @@ export default function AdminProductsPage() {
                       <div className="flex gap-2">
                         <button 
                           onClick={() => {
-                            let baseUrl = window.location.origin;
-                            // Convert dev URL to public preview URL for sharing
-                            if (baseUrl.includes('ais-dev-')) {
+                            // Use VITE_PUBLIC_DOMAIN if set, otherwise fallback to current origin
+                            let baseUrl = import.meta.env.VITE_PUBLIC_DOMAIN || window.location.origin;
+                            
+                            // Only do the ais-dev to ais-pre conversion if we're using the current origin
+                            if (!import.meta.env.VITE_PUBLIC_DOMAIN && baseUrl.includes('ais-dev-')) {
                               baseUrl = baseUrl.replace('ais-dev-', 'ais-pre-');
                             }
+                            
+                            // Ensure no trailing slash in baseUrl
+                            baseUrl = baseUrl.replace(/\/$/, '');
+                            
                             const url = `${baseUrl}/p/${product.id}`;
                             navigator.clipboard.writeText(url);
                             toast.success('تم نسخ الرابط العام للمنتج بنجاح!');
