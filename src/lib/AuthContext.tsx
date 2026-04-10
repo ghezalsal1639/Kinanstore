@@ -38,9 +38,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await signOut(auth);
   };
 
-  // For this prototype, the admin is hardcoded to the specific email
-  const admins = ['salimgh1639@gmail.com', 'salimgh1639-sys@gmail.com', 'ghezalsal1639@gmail.com'];
-  const isAdmin = user?.email && admins.includes(user.email);
+  // Radical fix: Ensure the user's email is explicitly checked
+  const admins = [
+    'salimgh1639@gmail.com', 
+    'salimgh1639-sys@gmail.com', 
+    'ghezalsal1639@gmail.com'
+  ];
+  const isAdmin = user?.email && admins.includes(user.email.toLowerCase());
 
   return (
     <AuthContext.Provider value={{ user, loading, isAdmin: !!isAdmin, login, logout }}>

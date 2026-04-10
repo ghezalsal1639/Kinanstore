@@ -724,20 +724,22 @@ export default function AdminProductsPage() {
                       <div className="flex gap-2">
                         <button 
                           onClick={() => {
-                            // Use VITE_PUBLIC_DOMAIN if set, otherwise fallback to current origin
+                            // RADICAL FIX: Force Vercel domain if not in dev
                             let baseUrl = import.meta.env.VITE_PUBLIC_DOMAIN || window.location.origin;
                             
-                            // Only do the ais-dev to ais-pre conversion if we're using the current origin
-                            if (!import.meta.env.VITE_PUBLIC_DOMAIN && baseUrl.includes('ais-dev-')) {
-                              baseUrl = baseUrl.replace('ais-dev-', 'ais-pre-');
+                            // If we are on Vercel, use the current hostname
+                            if (window.location.hostname.includes('vercel.app')) {
+                              baseUrl = `https://${window.location.hostname}`;
+                            } else {
+                              // Fallback to the known Vercel domain if we're in AI Studio
+                              baseUrl = import.meta.env.VITE_PUBLIC_DOMAIN || 'https://kkstore-lac.vercel.app';
                             }
                             
-                            // Ensure no trailing slash in baseUrl
                             baseUrl = baseUrl.replace(/\/$/, '');
-                            
                             const url = `${baseUrl}/p/${product.id}`;
+                            
                             navigator.clipboard.writeText(url);
-                            toast.success('تم نسخ الرابط العام للمنتج بنجاح!');
+                            toast.success('تم نسخ رابط Vercel بنجاح!');
                           }}
                           className="text-slate-500 hover:text-slate-700 hover:bg-slate-50 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium flex items-center gap-1 border border-slate-200"
                           title="نسخ رابط صفحة الهبوط"
