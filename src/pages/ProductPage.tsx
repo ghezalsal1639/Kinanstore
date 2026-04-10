@@ -114,9 +114,12 @@ export default function ProductPage() {
 
   const handleWilayaChange = (wilayaName: string) => {
     const selected = ALGERIA_CITIES.find(t => t.name === wilayaName);
+    // Reset commune immediately in formData
     setFormData(prev => ({ ...prev, wilaya: wilayaName, commune: '' }));
+    
+    // Update the filtered list of communes
     if (selected) {
-      setFilteredCommunes(selected.communes);
+      setFilteredCommunes([...selected.communes]);
     } else {
       setFilteredCommunes([]);
     }
