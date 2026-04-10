@@ -152,7 +152,7 @@ function AdminPage() {
               <button 
                 onClick={syncTerritories}
                 disabled={isSyncing}
-                className="text-sm font-bold text-slate-700 hover:text-indigo-600 transition-colors flex items-center gap-2 disabled:opacity-50"
+                className="text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-xl transition-all flex items-center gap-2 disabled:opacity-50 shadow-sm shadow-indigo-100"
               >
                 <Globe className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
                 تزامن المناطق
