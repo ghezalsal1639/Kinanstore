@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import AdminPage from './pages/AdminPage';
 import ProductPage from './pages/ProductPage';
@@ -12,7 +12,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 export default function App() {
   return (
     <AuthProvider>
-      <HashRouter>
+      <BrowserRouter>
         <Toaster position="top-center" />
         <Routes>
           <Route path="/" element={<HomePage />} />
@@ -31,7 +31,7 @@ export default function App() {
           } />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </HashRouter>
+      </BrowserRouter>
     </AuthProvider>
   );
 }

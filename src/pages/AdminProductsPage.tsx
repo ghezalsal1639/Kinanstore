@@ -729,7 +729,7 @@ export default function AdminProductsPage() {
                             if (baseUrl.includes('ais-dev-')) {
                               baseUrl = baseUrl.replace('ais-dev-', 'ais-pre-');
                             }
-                            const url = `${baseUrl}/#/p/${product.id}`;
+                            const url = `${baseUrl}/p/${product.id}`;
                             navigator.clipboard.writeText(url);
                             toast.success('تم نسخ الرابط العام للمنتج بنجاح!');
                           }}
@@ -740,7 +740,7 @@ export default function AdminProductsPage() {
                           نسخ الرابط
                         </button>
                         <a 
-                          href={`#/p/${product.id}`}
+                          href={`/p/${product.id}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors text-sm font-medium flex items-center gap-1 border border-indigo-100"

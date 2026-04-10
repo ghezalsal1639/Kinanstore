@@ -39,7 +39,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   // For this prototype, the admin is hardcoded to the specific email
-  const isAdmin = user?.email === 'salimgh1639@gmail.com';
+  const admins = ['salimgh1639@gmail.com', 'salimgh1639-sys@gmail.com', 'ghezalsal1639@gmail.com'];
+  const isAdmin = user?.email && admins.includes(user.email);
 
   return (
     <AuthContext.Provider value={{ user, loading, isAdmin: !!isAdmin, login, logout }}>

@@ -42,7 +42,7 @@ export default function HomePage() {
       <h1 className="text-2xl font-bold text-slate-900 mb-2">مرحباً بك في K&K Store</h1>
       <p className="text-slate-500 mb-6">لا توجد منتجات معروضة حالياً. يرجى العودة لاحقاً.</p>
       <a 
-        href="#/admin" 
+        href="/admin" 
         className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
       >
         لوحة التحكم
