@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Package, Truck, Star, CheckCircle2, Lock, ChevronDown, X, Sparkles, CheckCircle } from 'lucide-react';
+import { ShieldCheck, Package, Truck, Star, CheckCircle2, Lock, ChevronDown, X, Sparkles, CheckCircle, MapPin, Home } from 'lucide-react';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { WILAYAS, saveOrder, getProduct, Product } from '../lib/data';
+import { WILAYAS, saveOrder, getProduct, Product, getTerritories, Territory } from '../lib/data';
 
 export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,12 +19,15 @@ export default function ProductPage() {
   const [variants, setVariants] = useState<any[]>([]);
   const [variantType, setVariantType] = useState<'colors' | 'sizes' | 'none'>('none');
   const [variantNameDisplay, setVariantNameDisplay] = useState('الخيار');
+  const [territories, setTerritories] = useState<Territory[]>([]);
+  const [filteredCommunes, setFilteredCommunes] = useState<{id: string, name: string, code: string}[]>([]);
 
   const [formData, setFormData] = useState({
     customerName: '',
     phone: '',
     wilaya: '',
     commune: '',
+    address: '',
     offer: '1-pack',
     selectedVariants: {} as Record<string, number>,
   });
@@ -39,6 +42,12 @@ export default function ProductPage() {
       const fetchedProduct = await getProduct(id);
       if (fetchedProduct) {
         setProduct(fetchedProduct);
+        
+        // Fetch territories
+        const territoryData = await getTerritories();
+        if (territoryData && territoryData.length > 0) {
+          setTerritories(territoryData);
+        }
         
         // Generate offers based on price
         const price2 = fetchedProduct.offer2Price || (fetchedProduct.price * 2);
@@ -108,6 +117,16 @@ export default function ProductPage() {
       </div>
     );
   }
+
+  const handleWilayaChange = (wilayaName: string) => {
+    const selected = territories.find(t => t.name === wilayaName);
+    setFormData(prev => ({ ...prev, wilaya: wilayaName, commune: '' }));
+    if (selected) {
+      setFilteredCommunes(selected.communes);
+    } else {
+      setFilteredCommunes([]);
+    }
+  };
 
   const handleOfferChange = (offerId: string) => {
     const selectedOffer = offers.find(o => o.id === offerId);
@@ -512,11 +531,33 @@ export default function ProductPage() {
                   <div className="relative">
                     <select 
                       value={formData.wilaya}
-                      onChange={(e) => setFormData({...formData, wilaya: e.target.value})}
+                      onChange={(e) => handleWilayaChange(e.target.value)}
                       className="w-full px-4 py-3.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-rose-600 focus:border-rose-600 outline-none transition-all bg-white appearance-none font-medium"
                     >
                       <option value="">اختر الولاية...</option>
-                      {WILAYAS.map(w => <option key={w} value={w}>{w}</option>)}
+                      {territories.length > 0 ? (
+                        territories.map(w => <option key={w.id} value={w.name}>{w.code} - {w.name}</option>)
+                      ) : (
+                        WILAYAS.map(w => <option key={w} value={w}>{w}</option>)
+                      )}
+                    </select>
+                    <ChevronDown className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+                <div>
+                  <div className="relative">
+                    <select 
+                      value={formData.commune}
+                      onChange={(e) => setFormData({...formData, commune: e.target.value})}
+                      disabled={!formData.wilaya}
+                      className="w-full px-4 py-3.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-rose-600 focus:border-rose-600 outline-none transition-all bg-white appearance-none font-medium disabled:bg-gray-100 disabled:text-gray-400"
+                    >
+                      <option value="">اختر البلدية...</option>
+                      {filteredCommunes.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                      {!formData.wilaya && <option value="">يرجى اختيار الولاية أولاً</option>}
+                      {formData.wilaya && filteredCommunes.length === 0 && territories.length === 0 && (
+                        <option value="other">أخرى</option>
+                      )}
                     </select>
                     <ChevronDown className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                   </div>
@@ -524,10 +565,10 @@ export default function ProductPage() {
                 <div>
                   <input 
                     type="text" 
-                    value={formData.commune}
-                    onChange={(e) => setFormData({...formData, commune: e.target.value})}
+                    value={formData.address}
+                    onChange={(e) => setFormData({...formData, address: e.target.value})}
                     className="w-full px-4 py-3.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-rose-600 focus:border-rose-600 outline-none transition-all bg-white font-medium placeholder:font-normal"
-                    placeholder="البلدية أو العنوان بالتفصيل"
+                    placeholder="عنوان الدار (اختياري)"
                   />
                 </div>
               </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { subscribeToOrders, updateOrderStatus, Order, OrderStatus } from '../lib/data';
-import { Package, Phone, MapPin, Calendar, CheckCircle, Truck, RefreshCcw, XCircle, Clock, LogOut, TrendingUp, BarChart3 } from 'lucide-react';
+import { subscribeToOrders, updateOrderStatus, Order, OrderStatus, saveTerritories, Territory } from '../lib/data';
+import { Package, Phone, MapPin, Calendar, CheckCircle, Truck, RefreshCcw, XCircle, Clock, LogOut, TrendingUp, BarChart3, Globe, Home } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../lib/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -32,7 +32,59 @@ export default function AdminPageWrapper() {
 function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
+  const [isSyncing, setIsSyncing] = useState(false);
   const { logout } = useAuth();
+
+  const syncTerritories = async () => {
+    if (!confirm('هل تريد تحديث قائمة الولايات والبلديات من ZR Express؟')) return;
+    
+    setIsSyncing(true);
+    const toastId = toast.loading('جاري جلب البيانات من ZR Express...');
+    
+    try {
+      const response = await fetch('https://api.zr-express.dz/api/v1/territories/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Tenant': 'ec5f7b7e-5252-4281-848c-cc483d75e61d',
+          'Authorization': 'Bearer 1EiTUt8dH1eeaxEVDwMaIH4SUn2vMLFQGsvmNRZP2xp8TMKsI2qlzHKfMDUgA61Z'
+        },
+        body: JSON.stringify({
+          "pageSize": 2000,
+          "pageNumber": 0
+        })
+      });
+
+      if (!response.ok) throw new Error('فشل الاتصال بـ ZR Express');
+
+      const data = await response.json();
+      const items = data.items;
+
+      const wilayas = items.filter((item: any) => item.level === "1" || item.level === 1);
+      const communes = items.filter((item: any) => item.level === "2" || item.level === 2);
+
+      const organizedData: Territory[] = wilayas.map((w: any) => ({
+        id: w.id,
+        code: w.code,
+        name: w.name,
+        communes: communes
+          .filter((c: any) => c.parentId === w.id)
+          .map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            code: c.code
+          }))
+      })).sort((a: any, b: any) => parseInt(a.code) - parseInt(b.code));
+
+      await saveTerritories(organizedData);
+      toast.success('تم تحديث قائمة المناطق بنجاح', { id: toastId });
+    } catch (error) {
+      console.error(error);
+      toast.error('حدث خطأ أثناء جلب البيانات', { id: toastId });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = subscribeToOrders((data) => {
@@ -96,6 +148,15 @@ function AdminPage() {
                 <Package className="w-4 h-4" />
                 إدارة المنتجات
               </Link>
+              <div className="w-px h-6 bg-slate-200"></div>
+              <button 
+                onClick={syncTerritories}
+                disabled={isSyncing}
+                className="text-sm font-bold text-slate-700 hover:text-indigo-600 transition-colors flex items-center gap-2 disabled:opacity-50"
+              >
+                <Globe className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                تزامن المناطق
+              </button>
             </div>
             <div className="flex items-center gap-6">
               <div className="w-px h-10 bg-slate-200 hidden sm:block"></div>
@@ -243,6 +304,12 @@ function AdminPage() {
                             <MapPin className="w-3 h-3" />
                             <span>{order.wilaya} - {order.commune}</span>
                           </div>
+                          {order.address && (
+                            <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-1 font-medium">
+                              <Home className="w-3 h-3" />
+                              <span>{order.address}</span>
+                            </div>
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           <div className="font-bold text-slate-700 text-sm">

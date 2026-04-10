@@ -1,4 +1,4 @@
-import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, getDocFromServer } from 'firebase/firestore';
+import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, getDocFromServer, setDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
 
 enum OperationType {
@@ -87,6 +87,7 @@ export interface Order {
   phone: string;
   wilaya: string;
   commune: string;
+  address?: string;
   offer: string;
   flavor?: string;
   status: OrderStatus;
@@ -200,5 +201,44 @@ export const updateOrderStatus = async (id: string, status: OrderStatus) => {
     await updateDoc(doc(db, 'orders', id), { status });
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+};
+
+export interface Territory {
+  id: string;
+  code: string;
+  name: string;
+  communes: {
+    id: string;
+    name: string;
+    code: string;
+  }[];
+}
+
+export const saveTerritories = async (territories: Territory[]) => {
+  const path = 'settings/territories';
+  try {
+    await setDoc(doc(db, 'settings', 'territories'), { 
+      data: territories,
+      lastUpdated: new Date().toISOString()
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+};
+
+// Using a more robust way to handle settings
+export const getTerritories = async (): Promise<Territory[]> => {
+  const path = 'settings/territories';
+  try {
+    const docRef = doc(db, 'settings', 'territories');
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      return snap.data().data as Territory[];
+    }
+    return [];
+  } catch (error) {
+    console.error("Error fetching territories:", error);
+    return [];
   }
 };
