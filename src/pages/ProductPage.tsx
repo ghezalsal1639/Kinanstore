@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ShieldCheck, Package, Truck, Star, CheckCircle2, Lock, ChevronDown, X, Sparkles, CheckCircle, MapPin, Home } from 'lucide-react';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
@@ -20,7 +20,6 @@ export default function ProductPage() {
   const [variants, setVariants] = useState<any[]>([]);
   const [variantType, setVariantType] = useState<'colors' | 'sizes' | 'none'>('none');
   const [variantNameDisplay, setVariantNameDisplay] = useState('الخيار');
-  const [filteredCommunes, setFilteredCommunes] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
     customerName: '',
@@ -31,6 +30,15 @@ export default function ProductPage() {
     offer: '1-pack',
     selectedVariants: {} as Record<string, number>,
   });
+
+  // Derive filtered communes directly from the selected wilaya
+  const filteredCommunes = useMemo(() => {
+    if (!formData.wilaya) return [];
+    const selected = ALGERIA_CITIES.find(t => t.name === formData.wilaya);
+    if (!selected) return [];
+    // Remove duplicates and sort alphabetically
+    return Array.from(new Set(selected.communes)).sort((a, b) => a.localeCompare(b, 'ar'));
+  }, [formData.wilaya]);
 
   useEffect(() => {
     const fetchProductData = async () => {
@@ -113,18 +121,9 @@ export default function ProductPage() {
   }
 
   const handleWilayaChange = (wilayaName: string) => {
-    const selected = ALGERIA_CITIES.find(t => t.name === wilayaName);
-    // Reset commune immediately in formData
+    // Just update the wilaya and reset the commune
+    // The filteredCommunes will update automatically via useMemo
     setFormData(prev => ({ ...prev, wilaya: wilayaName, commune: '' }));
-    
-    // Update the filtered list of communes with sorting and unique values
-    if (selected) {
-      // Use Set to remove duplicates and sort alphabetically
-      const uniqueCommunes = Array.from(new Set(selected.communes)).sort((a, b) => a.localeCompare(b, 'ar'));
-      setFilteredCommunes(uniqueCommunes);
-    } else {
-      setFilteredCommunes([]);
-    }
   };
 
   const handleOfferChange = (offerId: string) => {
@@ -542,13 +541,18 @@ export default function ProductPage() {
                 <div>
                   <div className="relative">
                     <select 
+                      key={formData.wilaya}
                       value={formData.commune}
                       onChange={(e) => setFormData({...formData, commune: e.target.value})}
                       disabled={!formData.wilaya}
                       className="w-full px-4 py-3.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-rose-600 focus:border-rose-600 outline-none transition-all bg-white appearance-none font-medium disabled:bg-gray-100 disabled:text-gray-400"
                     >
                       <option value="">اختر البلدية...</option>
-                      {filteredCommunes.map(c => <option key={c} value={c}>{c}</option>)}
+                      {filteredCommunes.map((c, index) => (
+                        <option key={`${formData.wilaya}-${c}-${index}`} value={c}>
+                          {c}
+                        </option>
+                      ))}
                       {!formData.wilaya && <option value="">يرجى اختيار الولاية أولاً</option>}
                     </select>
                     <ChevronDown className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
