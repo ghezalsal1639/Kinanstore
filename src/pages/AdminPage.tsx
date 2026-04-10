@@ -42,7 +42,11 @@ function AdminPage() {
     const toastId = toast.loading('جاري جلب البيانات من ZR Express...');
     
     try {
-      const response = await fetch('https://api.zr-express.dz/api/v1/territories/search', {
+      const targetUrl = 'https://api.zr-express.dz/api/v1/territories/search';
+      // Using a CORS proxy to bypass browser restrictions
+      const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl);
+      
+      const response = await fetch(proxyUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -55,7 +59,11 @@ function AdminPage() {
         })
       });
 
-      if (!response.ok) throw new Error('فشل الاتصال بـ ZR Express');
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('ZR Error Response:', errorData);
+        throw new Error(`فشل الاتصال: ${response.status}`);
+      }
 
       const data = await response.json();
       const items = data.items;
