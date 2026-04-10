@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { subscribeToOrders, updateOrderStatus, Order, OrderStatus, saveTerritories, Territory } from '../lib/data';
-import { Package, Phone, MapPin, Calendar, CheckCircle, Truck, RefreshCcw, XCircle, Clock, LogOut, TrendingUp, BarChart3, Globe, Home } from 'lucide-react';
+import { subscribeToOrders, updateOrderStatus, Order, OrderStatus } from '../lib/data';
+import { Package, Phone, MapPin, Calendar, CheckCircle, Truck, RefreshCcw, XCircle, Clock, LogOut, TrendingUp, BarChart3, Home } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../lib/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -32,67 +32,7 @@ export default function AdminPageWrapper() {
 function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
-  const [isSyncing, setIsSyncing] = useState(false);
   const { logout } = useAuth();
-
-  const syncTerritories = async () => {
-    if (!confirm('هل تريد تحديث قائمة الولايات والبلديات من ZR Express؟')) return;
-    
-    setIsSyncing(true);
-    const toastId = toast.loading('جاري جلب البيانات من ZR Express...');
-    
-    try {
-      const targetUrl = 'https://api.zr-express.dz/api/v1/territories/search';
-      // Using a CORS proxy to bypass browser restrictions
-      const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl);
-      
-      const response = await fetch(proxyUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Tenant': 'ec5f7b7e-5252-4281-848c-cc483d75e61d',
-          'Authorization': 'Bearer 1EiTUt8dH1eeaxEVDwMaIH4SUn2vMLFQGsvmNRZP2xp8TMKsI2qlzHKfMDUgA61Z'
-        },
-        body: JSON.stringify({
-          "pageSize": 2000,
-          "pageNumber": 0
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.text();
-        console.error('ZR Error Response:', errorData);
-        throw new Error(`فشل الاتصال: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const items = data.items;
-
-      const wilayas = items.filter((item: any) => item.level === "1" || item.level === 1);
-      const communes = items.filter((item: any) => item.level === "2" || item.level === 2);
-
-      const organizedData: Territory[] = wilayas.map((w: any) => ({
-        id: w.id,
-        code: w.code,
-        name: w.name,
-        communes: communes
-          .filter((c: any) => c.parentId === w.id)
-          .map((c: any) => ({
-            id: c.id,
-            name: c.name,
-            code: c.code
-          }))
-      })).sort((a: any, b: any) => parseInt(a.code) - parseInt(b.code));
-
-      await saveTerritories(organizedData);
-      toast.success('تم تحديث قائمة المناطق بنجاح', { id: toastId });
-    } catch (error) {
-      console.error(error);
-      toast.error('حدث خطأ أثناء جلب البيانات', { id: toastId });
-    } finally {
-      setIsSyncing(false);
-    }
-  };
 
   useEffect(() => {
     const unsubscribe = subscribeToOrders((data) => {
@@ -156,15 +96,6 @@ function AdminPage() {
                 <Package className="w-4 h-4" />
                 إدارة المنتجات
               </Link>
-              <div className="w-px h-6 bg-slate-200"></div>
-              <button 
-                onClick={syncTerritories}
-                disabled={isSyncing}
-                className="text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-xl transition-all flex items-center gap-2 disabled:opacity-50 shadow-sm shadow-indigo-100"
-              >
-                <Globe className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                تزامن المناطق
-              </button>
             </div>
             <div className="flex items-center gap-6">
               <div className="w-px h-10 bg-slate-200 hidden sm:block"></div>

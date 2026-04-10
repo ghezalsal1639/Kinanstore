@@ -4,7 +4,8 @@ import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { WILAYAS, saveOrder, getProduct, Product, getTerritories, Territory } from '../lib/data';
+import { saveOrder, getProduct, Product } from '../lib/data';
+import { ALGERIA_CITIES, Wilaya } from '../lib/algeria-cities';
 
 export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,8 +20,7 @@ export default function ProductPage() {
   const [variants, setVariants] = useState<any[]>([]);
   const [variantType, setVariantType] = useState<'colors' | 'sizes' | 'none'>('none');
   const [variantNameDisplay, setVariantNameDisplay] = useState('الخيار');
-  const [territories, setTerritories] = useState<Territory[]>([]);
-  const [filteredCommunes, setFilteredCommunes] = useState<{id: string, name: string, code: string}[]>([]);
+  const [filteredCommunes, setFilteredCommunes] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
     customerName: '',
@@ -42,12 +42,6 @@ export default function ProductPage() {
       const fetchedProduct = await getProduct(id);
       if (fetchedProduct) {
         setProduct(fetchedProduct);
-        
-        // Fetch territories
-        const territoryData = await getTerritories();
-        if (territoryData && territoryData.length > 0) {
-          setTerritories(territoryData);
-        }
         
         // Generate offers based on price
         const price2 = fetchedProduct.offer2Price || (fetchedProduct.price * 2);
@@ -119,7 +113,7 @@ export default function ProductPage() {
   }
 
   const handleWilayaChange = (wilayaName: string) => {
-    const selected = territories.find(t => t.name === wilayaName);
+    const selected = ALGERIA_CITIES.find(t => t.name === wilayaName);
     setFormData(prev => ({ ...prev, wilaya: wilayaName, commune: '' }));
     if (selected) {
       setFilteredCommunes(selected.communes);
@@ -535,11 +529,7 @@ export default function ProductPage() {
                       className="w-full px-4 py-3.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-rose-600 focus:border-rose-600 outline-none transition-all bg-white appearance-none font-medium"
                     >
                       <option value="">اختر الولاية...</option>
-                      {territories.length > 0 ? (
-                        territories.map(w => <option key={w.id} value={w.name}>{w.code} - {w.name}</option>)
-                      ) : (
-                        WILAYAS.map(w => <option key={w} value={w}>{w}</option>)
-                      )}
+                      {ALGERIA_CITIES.map(w => <option key={w.id} value={w.name}>{w.name}</option>)}
                     </select>
                     <ChevronDown className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                   </div>
@@ -553,11 +543,8 @@ export default function ProductPage() {
                       className="w-full px-4 py-3.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-rose-600 focus:border-rose-600 outline-none transition-all bg-white appearance-none font-medium disabled:bg-gray-100 disabled:text-gray-400"
                     >
                       <option value="">اختر البلدية...</option>
-                      {filteredCommunes.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                      {filteredCommunes.map(c => <option key={c} value={c}>{c}</option>)}
                       {!formData.wilaya && <option value="">يرجى اختيار الولاية أولاً</option>}
-                      {formData.wilaya && filteredCommunes.length === 0 && territories.length === 0 && (
-                        <option value="other">أخرى</option>
-                      )}
                     </select>
                     <ChevronDown className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                   </div>
