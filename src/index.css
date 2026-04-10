@@ -4,6 +4,7 @@
 @theme {
   --font-sans: "Tajawal", ui-sans-serif, system-ui, sans-serif;
   --animate-bounce-subtle: bounce-subtle 2s infinite;
+  --animate-flash-red: flash-red 0.5s ease-in-out 2;
   
   @keyframes bounce-subtle {
     0%, 100% {
@@ -14,6 +15,11 @@
       transform: translateY(0);
       animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
     }
+  }
+
+  @keyframes flash-red {
+    0%, 100% { border-color: #d1d5db; }
+    50% { border-color: #ef4444; background-color: #fef2f2; }
   }
 }
 

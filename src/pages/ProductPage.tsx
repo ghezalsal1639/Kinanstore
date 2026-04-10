@@ -31,6 +31,8 @@ export default function ProductPage() {
     selectedVariants: {} as Record<string, number>,
   });
 
+  const [errors, setErrors] = useState<Record<string, boolean>>({});
+
   // Derive filtered communes directly from the selected wilaya
   const filteredCommunes = useMemo(() => {
     if (!formData.wilaya) return [];
@@ -174,8 +176,29 @@ export default function ProductPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.customerName || !formData.phone || !formData.wilaya || !formData.commune) {
-      toast.error('يرجى ملء جميع المعلومات');
+    
+    const isPhoneValid = /^(05|06|07)\d{8}$/.test(formData.phone.trim());
+    
+    const newErrors: Record<string, boolean> = {
+      customerName: !formData.customerName.trim(),
+      phone: !formData.phone.trim() || !isPhoneValid,
+      wilaya: !formData.wilaya,
+      commune: !formData.commune,
+      address: !formData.address.trim(),
+    };
+    
+    // Reset errors first to allow re-triggering animation
+    setErrors({});
+    
+    // Small delay to ensure React picks up the state change for animation re-trigger
+    setTimeout(() => {
+      setErrors(newErrors);
+      if (Object.values(newErrors).some(v => v)) {
+        toast.error('يرجى ملء جميع المعلومات المطلوبة');
+      }
+    }, 10);
+
+    if (Object.values(newErrors).some(v => v)) {
       return;
     }
 
@@ -510,42 +533,77 @@ export default function ProductPage() {
                   <input 
                     type="text" 
                     value={formData.customerName}
-                    onChange={(e) => setFormData({...formData, customerName: e.target.value})}
-                    className="w-full px-4 py-3.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-rose-600 focus:border-rose-600 outline-none transition-all bg-white font-medium placeholder:font-normal"
+                    onChange={(e) => {
+                      setFormData({...formData, customerName: e.target.value});
+                      if (errors.customerName) setErrors({...errors, customerName: false});
+                    }}
+                    className={`w-full px-4 py-3.5 rounded-xl border outline-none transition-all bg-white font-medium placeholder:font-normal ${
+                      errors.customerName 
+                        ? 'border-red-500 ring-2 ring-red-100 animate-flash-red' 
+                        : 'border-gray-300 focus:ring-2 focus:ring-rose-600 focus:border-rose-600'
+                    }`}
                     placeholder="الاسم واللقب"
                   />
+                  {errors.customerName && <p className="text-red-500 text-xs mt-1 mr-1 font-bold">يرجى إدخال الاسم واللقب</p>}
                 </div>
                 <div>
                   <input 
                     type="tel" 
                     dir="ltr"
                     value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    className="w-full px-4 py-3.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-rose-600 focus:border-rose-600 outline-none transition-all bg-white text-right font-medium placeholder:font-normal"
+                    onChange={(e) => {
+                      setFormData({...formData, phone: e.target.value});
+                      if (errors.phone) setErrors({...errors, phone: false});
+                    }}
+                    className={`w-full px-4 py-3.5 rounded-xl border outline-none transition-all bg-white text-right font-medium placeholder:font-normal ${
+                      errors.phone 
+                        ? 'border-red-500 ring-2 ring-red-100 animate-flash-red' 
+                        : 'border-gray-300 focus:ring-2 focus:ring-rose-600 focus:border-rose-600'
+                    }`}
                     placeholder="رقم الهاتف (مثال: 0550123456)"
                   />
+                  {errors.phone && (
+                    <p className="text-red-500 text-xs mt-1 mr-1 font-bold">
+                      {formData.phone.trim() === '' ? 'يرجى إدخال رقم الهاتف' : 'رقم الهاتف غير صحيح (يجب أن يبدأ بـ 05، 06 أو 07 ويتكون من 10 أرقام)'}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <div className="relative">
                     <select 
                       value={formData.wilaya}
-                      onChange={(e) => handleWilayaChange(e.target.value)}
-                      className="w-full px-4 py-3.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-rose-600 focus:border-rose-600 outline-none transition-all bg-white appearance-none font-medium"
+                      onChange={(e) => {
+                        handleWilayaChange(e.target.value);
+                        if (errors.wilaya) setErrors({...errors, wilaya: false});
+                      }}
+                      className={`w-full px-4 py-3.5 rounded-xl border outline-none transition-all bg-white appearance-none font-medium ${
+                        errors.wilaya 
+                          ? 'border-red-500 ring-2 ring-red-100 animate-flash-red' 
+                          : 'border-gray-300 focus:ring-2 focus:ring-rose-600 focus:border-rose-600'
+                      }`}
                     >
                       <option value="">اختر الولاية...</option>
                       {ALGERIA_CITIES.map(w => <option key={w.id} value={w.name}>{w.name}</option>)}
                     </select>
                     <ChevronDown className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                   </div>
+                  {errors.wilaya && <p className="text-red-500 text-xs mt-1 mr-1 font-bold">يرجى اختيار الولاية</p>}
                 </div>
                 <div>
                   <div className="relative">
                     <select 
                       key={formData.wilaya}
                       value={formData.commune}
-                      onChange={(e) => setFormData({...formData, commune: e.target.value})}
+                      onChange={(e) => {
+                        setFormData({...formData, commune: e.target.value});
+                        if (errors.commune) setErrors({...errors, commune: false});
+                      }}
                       disabled={!formData.wilaya}
-                      className="w-full px-4 py-3.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-rose-600 focus:border-rose-600 outline-none transition-all bg-white appearance-none font-medium disabled:bg-gray-100 disabled:text-gray-400"
+                      className={`w-full px-4 py-3.5 rounded-xl border outline-none transition-all bg-white appearance-none font-medium disabled:bg-gray-100 disabled:text-gray-400 ${
+                        errors.commune 
+                          ? 'border-red-500 ring-2 ring-red-100 animate-flash-red' 
+                          : 'border-gray-300 focus:ring-2 focus:ring-rose-600 focus:border-rose-600'
+                      }`}
                     >
                       <option value="">اختر البلدية...</option>
                       {filteredCommunes.map((c, index) => (
@@ -557,15 +615,24 @@ export default function ProductPage() {
                     </select>
                     <ChevronDown className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                   </div>
+                  {errors.commune && <p className="text-red-500 text-xs mt-1 mr-1 font-bold">يرجى اختيار البلدية</p>}
                 </div>
                 <div>
                   <input 
                     type="text" 
                     value={formData.address}
-                    onChange={(e) => setFormData({...formData, address: e.target.value})}
-                    className="w-full px-4 py-3.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-rose-600 focus:border-rose-600 outline-none transition-all bg-white font-medium placeholder:font-normal"
-                    placeholder="عنوان الدار (اختياري)"
+                    onChange={(e) => {
+                      setFormData({...formData, address: e.target.value});
+                      if (errors.address) setErrors({...errors, address: false});
+                    }}
+                    className={`w-full px-4 py-3.5 rounded-xl border outline-none transition-all bg-white font-medium placeholder:font-normal ${
+                      errors.address 
+                        ? 'border-red-500 ring-2 ring-red-100 animate-flash-red' 
+                        : 'border-gray-300 focus:ring-2 focus:ring-rose-600 focus:border-rose-600'
+                    }`}
+                    placeholder="عنوان الدار (مثال: حي 20 مسكن، رقم 5)"
                   />
+                  {errors.address && <p className="text-red-500 text-xs mt-1 mr-1 font-bold">يرجى إدخال عنوان الدار</p>}
                 </div>
               </div>
             </div>

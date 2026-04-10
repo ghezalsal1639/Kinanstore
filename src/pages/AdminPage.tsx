@@ -98,64 +98,10 @@ function AdminPage() {
               </Link>
             </div>
             <div className="flex items-center gap-6">
-              <div className="w-px h-10 bg-slate-200 hidden sm:block"></div>
-              <div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">الأرباح المستلمة</p>
-                <p className="text-xl font-black text-emerald-600">{totalRevenue.toLocaleString()} دج</p>
-              </div>
-              <div className="w-px h-10 bg-slate-200"></div>
               <div>
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">إجمالي الطلبات</p>
                 <p className="text-xl font-black text-slate-900">{orders.length}</p>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Analytics Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-            <div className="flex items-center gap-2 mb-6">
-              <BarChart3 className="w-5 h-5 text-indigo-600" />
-              <h2 className="font-bold text-slate-800">توزيع الطلبات حسب الحالة</h2>
-            </div>
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                    cursor={{ fill: '#f8fafc' }}
-                  />
-                  <Bar dataKey="count" radius={[6, 6, 0, 0]} barSize={40}>
-                    {chartData.map((entry, index) => (
-                      <Bar key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-            <div className="flex items-center gap-2 mb-6">
-              <TrendingUp className="w-5 h-5 text-emerald-600" />
-              <h2 className="font-bold text-slate-800">الأرباح اليومية (آخر 7 أيام)</h2>
-            </div>
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={revenueData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                  />
-                  <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
-                </LineChart>
-              </ResponsiveContainer>
             </div>
           </div>
         </div>
