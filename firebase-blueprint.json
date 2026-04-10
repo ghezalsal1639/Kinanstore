@@ -1,0 +1,48 @@
+{
+  "entities": {
+    "Order": {
+      "title": "Order",
+      "description": "A customer order",
+      "type": "object",
+      "properties": {
+        "customerName": { "type": "string" },
+        "phone": { "type": "string" },
+        "wilaya": { "type": "string" },
+        "commune": { "type": "string" },
+        "offer": { "type": "string" },
+        "flavor": { "type": "string" },
+        "status": { "type": "string", "enum": ["new", "confirmed", "shipped", "delivered", "returned"] },
+        "totalPrice": { "type": "number" },
+        "date": { "type": "string", "format": "date-time" },
+        "trackingNumber": { "type": "string" }
+      },
+      "required": ["customerName", "phone", "wilaya", "commune", "offer", "status", "totalPrice", "date"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "A product in the store",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "oldPrice": { "type": "number" },
+        "colors": { "type": "array", "items": { "type": "string" } },
+        "sizes": { "type": "array", "items": { "type": "string" } },
+        "media": { "type": "array", "items": { "type": "string" } },
+        "date": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "price", "media", "date"]
+    }
+  },
+  "firestore": {
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Customer orders"
+    },
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Store products"
+    }
+  }
+}
