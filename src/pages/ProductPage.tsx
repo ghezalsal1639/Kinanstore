@@ -117,9 +117,11 @@ export default function ProductPage() {
     // Reset commune immediately in formData
     setFormData(prev => ({ ...prev, wilaya: wilayaName, commune: '' }));
     
-    // Update the filtered list of communes
+    // Update the filtered list of communes with sorting and unique values
     if (selected) {
-      setFilteredCommunes([...selected.communes]);
+      // Use Set to remove duplicates and sort alphabetically
+      const uniqueCommunes = Array.from(new Set(selected.communes)).sort((a, b) => a.localeCompare(b, 'ar'));
+      setFilteredCommunes(uniqueCommunes);
     } else {
       setFilteredCommunes([]);
     }
