@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { subscribeToOrders, updateOrderStatus, Order, OrderStatus } from '../lib/data';
-import { Package, Phone, MapPin, Calendar, CheckCircle, Truck, RefreshCcw, XCircle, Clock, LogOut, TrendingUp, BarChart3, Home } from 'lucide-react';
+import { Package, Phone, MapPin, Calendar, CheckCircle, Truck, RefreshCcw, XCircle, Clock, LogOut, TrendingUp, BarChart3, Home, Download, FileSpreadsheet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../lib/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import * as XLSX from 'xlsx';
 
 const STATUS_COLORS: Record<OrderStatus, string> = {
   new: 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -51,6 +52,40 @@ function AdminPage() {
   };
 
   const filteredOrders = filter === 'all' ? orders : orders.filter(o => o.status === filter);
+
+  const exportToExcel = () => {
+    const confirmedOrders = orders.filter(o => o.status === 'confirmed');
+    
+    if (confirmedOrders.length === 0) {
+      toast.error('لا توجد طلبيات مؤكدة لتنزيلها');
+      return;
+    }
+
+    const data = confirmedOrders.map(order => ({
+      'الاسم واللقب': order.customerName,
+      'رقم الهاتف': order.phone,
+      'الولاية': order.wilaya,
+      'البلدية': order.commune,
+      'العنوان': order.address || '',
+      'نوع التوصيل': order.deliveryMethod === 'office' ? 'مكتب' : 'منزل',
+      'العرض': order.offer,
+      'الخيارات': order.flavor || '',
+      'السعر الإجمالي': order.totalPrice,
+      'التاريخ': new Date(order.date).toLocaleDateString('en-GB'),
+      'الوقت': new Date(order.date).toLocaleTimeString('en-GB')
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(data, { header: undefined });
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "الطلبيات المؤكدة");
+    
+    // Auto-size columns
+    const max_width = data.reduce((w, r) => Math.max(w, ...Object.values(r).map(v => v ? v.toString().length : 0)), 10);
+    worksheet["!cols"] = Object.keys(data[0]).map(() => ({ wch: max_width + 5 }));
+
+    XLSX.writeFile(workbook, `طلبيات_مؤكدة_${new Date().toLocaleDateString('en-GB').replace(/\//g, '-')}.xlsx`);
+    toast.success('تم تحميل ملف Excel بنجاح');
+  };
 
   const totalRevenue = orders.filter(o => o.status === 'delivered').reduce((acc, curr) => acc + curr.totalPrice, 0);
 
@@ -107,39 +142,53 @@ function AdminPage() {
         </div>
 
         {/* Filters */}
-        <div className="flex gap-2 overflow-x-auto pb-4 mb-4 hide-scrollbar">
-          <button 
-            onClick={() => setFilter('all')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold whitespace-nowrap transition-all ${filter === 'all' ? 'bg-slate-900 text-white shadow-lg shadow-slate-200' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'}`}
-          >
-            <span>الكل</span>
-            <span className={`px-2 py-0.5 rounded-lg text-xs ${filter === 'all' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
-              {orders.length}
-            </span>
-          </button>
-          {(Object.keys(STATUS_LABELS) as OrderStatus[]).map(status => {
-            const count = orders.filter(o => o.status === status).length;
-            return (
-              <button 
-                key={status}
-                onClick={() => setFilter(status)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold whitespace-nowrap transition-all border ${
-                  filter === status 
-                    ? `${STATUS_COLORS[status]} shadow-lg opacity-100` 
-                    : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                <span>{STATUS_LABELS[status]}</span>
-                <span className={`px-2 py-0.5 rounded-lg text-xs ${
-                  filter === status 
-                    ? 'bg-white/60 text-current' 
-                    : 'bg-slate-100 text-slate-500'
-                }`}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
+          <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar flex-1">
+            <button 
+              onClick={() => setFilter('all')}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold whitespace-nowrap transition-all ${filter === 'all' ? 'bg-slate-900 text-white shadow-lg shadow-slate-200' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'}`}
+            >
+              <span>الكل</span>
+              <span className={`px-2 py-0.5 rounded-lg text-xs ${filter === 'all' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                {orders.length}
+              </span>
+            </button>
+            {(Object.keys(STATUS_LABELS) as OrderStatus[]).map(status => {
+              const count = orders.filter(o => o.status === status).length;
+              return (
+                <button 
+                  key={status}
+                  onClick={() => setFilter(status)}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold whitespace-nowrap transition-all border ${
+                    filter === status 
+                      ? `${STATUS_COLORS[status]} shadow-lg opacity-100` 
+                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  <span>{STATUS_LABELS[status]}</span>
+                  <span className={`px-2 py-0.5 rounded-lg text-xs ${
+                    filter === status 
+                      ? 'bg-white/60 text-current' 
+                      : 'bg-slate-100 text-slate-500'
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {filter === 'confirmed' && orders.filter(o => o.status === 'confirmed').length > 0 && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              onClick={exportToExcel}
+              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-2xl text-sm font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-100 whitespace-nowrap"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              تنزيل Excel
+            </motion.button>
+          )}
         </div>
 
         {/* Orders Table/List */}

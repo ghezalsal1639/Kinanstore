@@ -6,11 +6,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   const { user, loading, isAdmin } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-100" dir="rtl">
-        <div className="text-slate-500 font-medium">جاري التحقق من الصلاحيات...</div>
-      </div>
-    );
+    return null;
   }
 
   if (!user || !isAdmin) {
