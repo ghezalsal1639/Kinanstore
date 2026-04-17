@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ShieldCheck, Package, Truck, Star, CheckCircle2, Lock, ChevronDown, X, Sparkles, CheckCircle, MapPin, Home } from 'lucide-react';
+import { ShieldCheck, Package, Truck, Star, CheckCircle2, Lock, ChevronDown, X, Sparkles, CheckCircle, MapPin, Home, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'motion/react';
@@ -78,6 +78,18 @@ export default function ProductPage() {
     const newIdx = Math.round(scrollLeft / width);
     if (newIdx !== activeImage) {
       setActiveImage(newIdx);
+    }
+  };
+
+  const goToImage = (idx: number) => {
+    if (scrollRef.current) {
+      const width = scrollRef.current.clientWidth;
+      scrollRef.current.scrollTo({
+        left: idx * width,
+        behavior: 'smooth'
+      });
+      setActiveImage(idx);
+      setIsAutoPlaying(false);
     }
   };
 
@@ -314,7 +326,7 @@ export default function ProductPage() {
 
       <main className="max-w-md mx-auto bg-white min-h-screen shadow-xl">
         {/* Product Image Gallery (Swipeable) */}
-        <div className="relative w-full aspect-square bg-white border-b border-gray-100" dir="ltr">
+        <div className="relative w-full aspect-square bg-white border-b border-gray-100 group" dir="ltr">
           <div 
             ref={scrollRef}
             className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar w-full h-full scroll-smooth"
@@ -323,14 +335,14 @@ export default function ProductPage() {
             onMouseDown={() => setIsAutoPlaying(false)}
           >
             {productImages.map((img, idx) => (
-              <div key={idx} className="w-full h-full shrink-0 snap-center flex items-center justify-center overflow-hidden">
+              <div key={idx} className="w-full h-full shrink-0 snap-center snap-always flex items-center justify-center overflow-hidden">
                 {img.endsWith('.mp4') || img.endsWith('.webm') ? (
                   <video src={img} className="w-full h-full object-cover" autoPlay muted loop playsInline />
                 ) : (
                   <img 
                     src={img} 
                     alt={`${product.name} ${idx + 1}`} 
-                    className="w-full h-full object-contain bg-slate-50"
+                    className="w-full h-full object-contain bg-slate-50 transition-transform duration-500"
                     referrerPolicy="no-referrer"
                   />
                 )}
@@ -338,9 +350,27 @@ export default function ProductPage() {
             ))}
           </div>
           
+          {/* Navigation Arrows */}
+          {productImages.length > 1 && (
+            <>
+              <button 
+                onClick={(e) => { e.stopPropagation(); goToImage(activeImage > 0 ? activeImage - 1 : productImages.length - 1); }}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center text-slate-800 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10 hidden md:flex"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); goToImage(activeImage < productImages.length - 1 ? activeImage + 1 : 0); }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/50 backdrop-blur-md rounded-full flex items-center justify-center text-slate-800 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity z-10 hidden md:flex"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </>
+          )}
+
           {/* Active Image Indicator (Counter style for cleaner look) */}
           {productImages.length > 1 && (
-            <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-xs font-black flex items-center gap-1.5 shadow-lg border border-white/10" dir="rtl">
+            <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md text-white px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-lg border border-white/10 z-10" dir="rtl">
               <span className="text-rose-400">{activeImage + 1}</span>
               <span className="opacity-40">/</span>
               <span>{productImages.length}</span>
