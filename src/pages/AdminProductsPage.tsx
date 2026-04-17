@@ -381,11 +381,11 @@ export default function AdminProductsPage() {
               <Link to="/admin" className="p-2.5 bg-white rounded-xl shadow-sm hover:bg-slate-50 transition-all border border-slate-100 flex items-center justify-center">
                 <ArrowRight className="w-5 h-5 text-slate-600" />
               </Link>
-              <div className="flex items-center gap-3 mr-2">
-                <div className="w-14 h-14 flex items-center justify-center overflow-hidden">
+              <div className="flex items-center gap-4 mr-2">
+                <div className="w-20 h-20 flex items-center justify-center overflow-hidden">
                   <img src={appSettings.logoUrl || "/logo.png"} alt="Logo" className="w-full h-full object-contain" />
                 </div>
-                <h1 className="text-3xl font-black text-brand-teal tracking-tighter uppercase">{appSettings.storeName || "KINAN STORE"}</h1>
+                <h1 className="text-4xl font-black text-brand-teal tracking-tighter uppercase">{appSettings.storeName || "KINAN STORE"}</h1>
               </div>
             </div>
             <p className="text-slate-500 mt-1 font-medium mr-12 opacity-70">إدارة منتجات متجر كنان</p>

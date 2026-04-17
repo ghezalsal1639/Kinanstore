@@ -68,11 +68,11 @@ export default function AdminLogin() {
       <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-200 max-w-md w-full relative overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-1.5 bg-brand-teal" />
         
-        <div className="w-24 h-24 flex items-center justify-center mx-auto mb-6 overflow-hidden">
+        <div className="w-32 h-32 flex items-center justify-center mx-auto mb-6 overflow-hidden">
           <img src={appSettings.logoUrl || "/logo.png"} alt="Logo" className="w-full h-full object-contain" />
         </div>
 
-        <h1 className="text-3xl font-black text-brand-teal text-center mb-2 tracking-tighter uppercase">{appSettings.storeName || "KINAN STORE"}</h1>
+        <h1 className="text-4xl font-black text-brand-teal text-center mb-2 tracking-tighter uppercase">{appSettings.storeName || "KINAN STORE"}</h1>
         <p className="text-slate-500 text-center mb-8 text-sm font-medium">لوحة الإدارة - سجل الدخول للمتابعة</p>
         
         {/* Toggle Switches */}
