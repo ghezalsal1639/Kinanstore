@@ -14,6 +14,9 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true);
   
   const [activeImage, setActiveImage] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   
   const [offers, setOffers] = useState<any[]>([]);
@@ -41,6 +44,42 @@ export default function ProductPage() {
     // Remove duplicates and sort alphabetically
     return Array.from(new Set(selected.communes)).sort((a, b) => a.localeCompare(b, 'ar'));
   }, [formData.wilaya]);
+
+  const productImages = useMemo(() => {
+    if (!product) return ["https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?q=80&w=800&auto=format&fit=crop"];
+    return product.media && product.media.length > 0 
+      ? product.media 
+      : ["https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?q=80&w=800&auto=format&fit=crop"];
+  }, [product]);
+
+  useEffect(() => {
+    if (!isAutoPlaying || !productImages || productImages.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setActiveImage((prev) => {
+        const next = (prev + 1) % productImages.length;
+        if (scrollRef.current) {
+          const width = scrollRef.current.clientWidth;
+          scrollRef.current.scrollTo({
+            left: next * width,
+            behavior: 'smooth'
+          });
+        }
+        return next;
+      });
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [isAutoPlaying, productImages.length]);
+
+  const handleManualScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const scrollLeft = e.currentTarget.scrollLeft;
+    const width = e.currentTarget.clientWidth;
+    const newIdx = Math.round(scrollLeft / width);
+    if (newIdx !== activeImage) {
+      setActiveImage(newIdx);
+    }
+  };
 
   useEffect(() => {
     const fetchProductData = async () => {
@@ -259,10 +298,6 @@ export default function ProductPage() {
     }
   };
 
-  const productImages = product.media && product.media.length > 0 
-    ? product.media 
-    : ["https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?q=80&w=800&auto=format&fit=crop"];
-
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       {/* Top Announcement Bar */}
@@ -281,22 +316,21 @@ export default function ProductPage() {
         {/* Product Image Gallery (Swipeable) */}
         <div className="relative w-full aspect-square bg-white border-b border-gray-100" dir="ltr">
           <div 
-            className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar w-full h-full"
-            onScroll={(e) => {
-              const scrollLeft = e.currentTarget.scrollLeft;
-              const width = e.currentTarget.clientWidth;
-              setActiveImage(Math.round(scrollLeft / width));
-            }}
+            ref={scrollRef}
+            className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar w-full h-full scroll-smooth"
+            onScroll={handleManualScroll}
+            onTouchStart={() => setIsAutoPlaying(false)}
+            onMouseDown={() => setIsAutoPlaying(false)}
           >
             {productImages.map((img, idx) => (
-              <div key={idx} className="w-full h-full shrink-0 snap-center">
+              <div key={idx} className="w-full h-full shrink-0 snap-center flex items-center justify-center overflow-hidden">
                 {img.endsWith('.mp4') || img.endsWith('.webm') ? (
                   <video src={img} className="w-full h-full object-cover" autoPlay muted loop playsInline />
                 ) : (
                   <img 
                     src={img} 
                     alt={`${product.name} ${idx + 1}`} 
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain bg-slate-50"
                     referrerPolicy="no-referrer"
                   />
                 )}
@@ -304,19 +338,12 @@ export default function ProductPage() {
             ))}
           </div>
           
-          {/* Dots Indicator */}
+          {/* Active Image Indicator (Counter style for cleaner look) */}
           {productImages.length > 1 && (
-            <div className="absolute bottom-4 left-0 right-0 flex justify-center px-4">
-              <div className="flex gap-1.5 max-w-full overflow-x-auto py-1 px-2 no-scrollbar scroll-smooth">
-                {productImages.map((_, idx) => (
-                  <div 
-                    key={idx} 
-                    className={`h-1.5 rounded-full transition-all duration-300 shrink-0 ${
-                      activeImage === idx ? 'bg-rose-600 w-5' : 'bg-white/90 w-1.5 shadow-sm'
-                    }`} 
-                  />
-                ))}
-              </div>
+            <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-xs font-black flex items-center gap-1.5 shadow-lg border border-white/10" dir="rtl">
+              <span className="text-rose-400">{activeImage + 1}</span>
+              <span className="opacity-40">/</span>
+              <span>{productImages.length}</span>
             </div>
           )}
 
