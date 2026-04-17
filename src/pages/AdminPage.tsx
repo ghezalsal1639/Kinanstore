@@ -58,15 +58,18 @@ function AdminPage() {
   }, [isAdmin]);
 
   const handleAddHelper = async () => {
-    if (!newHelperEmail || !newHelperPassword) {
+    const email = newHelperEmail.trim();
+    const password = newHelperPassword.trim();
+
+    if (!email || !password) {
       toast.error('يرجى ملأ جميع الحقول');
       return;
     }
-    if (!newHelperEmail.includes('@')) {
+    if (!email.includes('@')) {
       toast.error('يرجى إدخال بريد إلكتروني صحيح');
       return;
     }
-    const result = await addHelper({ email: newHelperEmail.toLowerCase(), password: newHelperPassword });
+    const result = await addHelper({ email: email.toLowerCase(), password: password });
     if (result) {
       setNewHelperEmail('');
       setNewHelperPassword('');

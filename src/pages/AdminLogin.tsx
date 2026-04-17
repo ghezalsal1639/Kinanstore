@@ -30,20 +30,27 @@ export default function AdminLogin() {
 
   const handleStaffLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    const cleanEmail = email.trim();
+    const cleanPassword = password.trim();
+    
+    if (!cleanEmail || !cleanPassword) {
       toast.error('يرجى ملأ جميع الحقول');
       return;
     }
     setIsSubmitting(true);
     try {
-      const success = await helperLogin(email, password);
+      const success = await helperLogin(cleanEmail, cleanPassword);
       if (success) {
         toast.success('مرحباً بك مجدداً');
       } else {
-        toast.error('بيانات الدخول غير صحيحة');
+        toast.error('البريد الإلكتروني أو كلمة المرور غير صحيحة');
       }
-    } catch (error) {
-      toast.error('حدث خطأ أثناء تسجيل الدخول');
+    } catch (error: any) {
+      if (error.message === 'CONFIG_ERROR_ANONYMOUS_AUTH_DISABLED') {
+        toast.error('خطأ في الإعدادات: يرجى تفعيل Anonymous Auth في لوحة تحكم Firebase', { duration: 6000 });
+      } else {
+        toast.error('حدث خطأ أثناء تسجيل الدخول، تأكد من الاتصال بالإنترنت');
+      }
     } finally {
       setIsSubmitting(false);
     }

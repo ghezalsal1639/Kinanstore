@@ -80,7 +80,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       // 1. Sign in anonymously first to get permission to query the helpers collection
       if (!auth.currentUser) {
-        await signInAnonymously(auth);
+        try {
+          await signInAnonymously(auth);
+        } catch (authErr: any) {
+          if (authErr.code === 'auth/operation-not-allowed') {
+            throw new Error('CONFIG_ERROR_ANONYMOUS_AUTH_DISABLED');
+          }
+          throw authErr;
+        }
       }
 
       // 2. Look up the helper by email
@@ -100,11 +107,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     } catch (e) {
       console.error("Helper login process failed", e);
-      // Clean up on error
-      if (auth.currentUser?.isAnonymous) {
-        await signOut(auth);
-      }
-      return false;
+      // We re-throw to be caught by the UI
+      throw e;
     }
   };
 
