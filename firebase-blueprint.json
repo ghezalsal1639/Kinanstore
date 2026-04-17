@@ -35,9 +35,21 @@
         "date": { "type": "string", "format": "date-time" }
       },
       "required": ["name", "price", "media", "date"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "App settings",
+      "type": "object",
+      "properties": {
+        "helperEmails": { "type": "array", "items": { "type": "string" } }
+      }
     }
   },
   "firestore": {
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/Settings" },
+      "description": "Application settings"
+    },
     "/orders/{orderId}": {
       "schema": { "$ref": "#/entities/Order" },
       "description": "Customer orders"

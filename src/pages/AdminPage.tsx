@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { subscribeToOrders, updateOrderStatus, Order, OrderStatus } from '../lib/data';
-import { Package, Phone, MapPin, Calendar, CheckCircle, Truck, RefreshCcw, XCircle, Clock, LogOut, TrendingUp, BarChart3, Home, Download, FileSpreadsheet } from 'lucide-react';
+import { subscribeToOrders, updateOrderStatus, Order, OrderStatus, getAuthSettings, updateAuthSettings } from '../lib/data';
+import { Package, Phone, MapPin, Calendar, CheckCircle, Truck, RefreshCcw, XCircle, Clock, LogOut, TrendingUp, BarChart3, Home, Download, FileSpreadsheet, Settings, UserPlus, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../lib/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -33,14 +33,44 @@ export default function AdminPageWrapper() {
 function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
-  const { logout } = useAuth();
+  const { logout, isAdmin, isHelper } = useAuth();
+  const [showSettings, setShowSettings] = useState(false);
+  const [helperEmails, setHelperEmails] = useState<string[]>([]);
+  const [newHelperEmail, setNewHelperEmail] = useState('');
 
   useEffect(() => {
     const unsubscribe = subscribeToOrders((data) => {
       setOrders(data || []);
     });
+
+    if (isAdmin) {
+      getAuthSettings().then(settings => {
+        setHelperEmails(settings.helperEmails || []);
+      });
+    }
+
     return () => unsubscribe();
-  }, []);
+  }, [isAdmin]);
+
+  const handleAddHelper = async () => {
+    if (!newHelperEmail) return;
+    if (!newHelperEmail.includes('@')) {
+      toast.error('يرجى إدخال بريد إلكتروني صحيح');
+      return;
+    }
+    const updated = [...helperEmails, newHelperEmail.toLowerCase()];
+    setHelperEmails(updated);
+    await updateAuthSettings({ helperEmails: updated });
+    setNewHelperEmail('');
+    toast.success('تم إضافة المساعد بنجاح');
+  };
+
+  const handleRemoveHelper = async (email: string) => {
+    const updated = helperEmails.filter(e => e !== email);
+    setHelperEmails(updated);
+    await updateAuthSettings({ helperEmails: updated });
+    toast.success('تم حذف المساعد');
+  };
 
   const handleStatusChange = async (id: string, newStatus: OrderStatus) => {
     try {
@@ -127,10 +157,27 @@ function AdminPage() {
                 <LogOut className="w-5 h-5" />
               </button>
               <div className="w-px h-6 bg-slate-200"></div>
-              <Link to="/admin/products" className="text-sm font-bold text-slate-700 hover:text-rose-600 transition-colors flex items-center gap-2">
-                <Package className="w-4 h-4" />
-                إدارة المنتجات
-              </Link>
+              {isAdmin && (
+                <>
+                  <button 
+                    onClick={() => setShowSettings(true)}
+                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors" 
+                    title="الإعدادات"
+                  >
+                    <Settings className="w-5 h-5" />
+                  </button>
+                  <div className="w-px h-6 bg-slate-200"></div>
+                  <Link to="/admin/products" className="text-sm font-bold text-slate-700 hover:text-rose-600 transition-colors flex items-center gap-2">
+                    <Package className="w-4 h-4" />
+                    إدارة المنتجات
+                  </Link>
+                </>
+              )}
+              {isHelper && (
+                <div className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg border border-indigo-100">
+                  حساب مساعد
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-6">
               <div>
@@ -178,7 +225,7 @@ function AdminPage() {
             })}
           </div>
 
-          {filter === 'confirmed' && orders.filter(o => o.status === 'confirmed').length > 0 && (
+          {isAdmin && filter === 'confirmed' && orders.filter(o => o.status === 'confirmed').length > 0 && (
             <motion.button
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -215,7 +262,7 @@ function AdminPage() {
                     <tr>
                       <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">الزبون</th>
                       <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">الطلب</th>
-                      <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">المبلغ</th>
+                      {isAdmin && <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">المبلغ</th>}
                       <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">الحالة</th>
                       <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">إجراء</th>
                       <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest">التاريخ</th>
@@ -269,9 +316,11 @@ function AdminPage() {
                             </div>
                           )}
                         </td>
-                        <td className="px-6 py-4">
-                          <span className="font-black text-slate-900">{order.totalPrice} دج</span>
-                        </td>
+                        {isAdmin && (
+                          <td className="px-6 py-4">
+                            <span className="font-black text-slate-900">{order.totalPrice} دج</span>
+                          </td>
+                        )}
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center px-3 py-1 rounded-xl text-xs font-bold border ${STATUS_COLORS[order.status]}`}>
                             {STATUS_LABELS[order.status]}
@@ -311,6 +360,76 @@ function AdminPage() {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Settings Modal */}
+      <AnimatePresence>
+        {showSettings && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm" dir="rtl">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white rounded-[32px] p-8 max-w-md w-full shadow-2xl relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-indigo-500 to-purple-600" />
+              
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-black text-slate-900">إعدادات المساعدين</h2>
+                <button onClick={() => setShowSettings(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                  <X className="w-6 h-6 text-slate-400" />
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-bold text-slate-700 mb-2">إضافة مساعد جديد (بالإيميل)</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="email"
+                    value={newHelperEmail}
+                    onChange={(e) => setNewHelperEmail(e.target.value)}
+                    placeholder="example@gmail.com"
+                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                  />
+                  <button 
+                    onClick={handleAddHelper}
+                    className="bg-indigo-600 text-white p-2.5 rounded-xl hover:bg-indigo-700 transition-colors"
+                  >
+                    <UserPlus className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">قائمة المساعدين</p>
+                {helperEmails.length === 0 ? (
+                  <p className="text-sm text-slate-400 text-center py-4 bg-slate-50 rounded-2xl">لا يوجد مساعدين مضافين حالياً</p>
+                ) : (
+                  helperEmails.map(email => (
+                    <div key={email} className="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100 group">
+                      <span className="text-sm font-bold text-slate-700">{email}</span>
+                      <button 
+                        onClick={() => handleRemoveHelper(email)}
+                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="mt-8">
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="w-full bg-slate-900 text-white font-bold py-3.5 rounded-xl hover:bg-slate-800 transition-colors"
+                >
+                  حفظ وإغلاق
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -189,3 +189,46 @@ export const updateOrderStatus = async (id: string, status: OrderStatus) => {
     handleFirestoreError(error, OperationType.UPDATE, path);
   }
 };
+
+export interface AuthSettings {
+  helperEmails: string[];
+}
+
+export const getAuthSettings = async (): Promise<AuthSettings> => {
+  const path = 'settings/auth';
+  try {
+    const docRef = doc(db, 'settings', 'auth');
+    const settingsDoc = await getDoc(docRef);
+    if (settingsDoc.exists()) {
+      return settingsDoc.data() as AuthSettings;
+    }
+    // Return default if doesn't exist
+    return { helperEmails: [] };
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, path);
+    return { helperEmails: [] };
+  }
+};
+
+export const subscribeToAuthSettings = (callback: (settings: AuthSettings) => void) => {
+  const path = 'settings/auth';
+  const docRef = doc(db, 'settings', 'auth');
+  return onSnapshot(docRef, (snapshot) => {
+    if (snapshot.exists()) {
+      callback(snapshot.data() as AuthSettings);
+    } else {
+      callback({ helperEmails: [] });
+    }
+  }, (error) => {
+    handleFirestoreError(error, OperationType.GET, path);
+  });
+};
+
+export const updateAuthSettings = async (settings: AuthSettings) => {
+  const path = 'settings/auth';
+  try {
+    await setDoc(doc(db, 'settings', 'auth'), settings, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+};
