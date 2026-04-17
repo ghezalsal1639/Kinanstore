@@ -238,7 +238,7 @@ export const deleteHelper = async (id: string) => {
 export const findHelperByEmail = async (email: string): Promise<Helper | null> => {
   const path = 'helpers';
   try {
-    const q = query(collection(db, path), where('email', '==', email.toLowerCase()));
+    const q = query(collection(db, path), where('email', '==', email.toLowerCase().trim()));
     const snapshot = await getDocs(q);
     if (!snapshot.empty) {
       return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Helper;
@@ -246,6 +246,6 @@ export const findHelperByEmail = async (email: string): Promise<Helper | null> =
     return null;
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, path);
-    return null;
+    return null; // This won't be reached because handleFirestoreError throws
   }
 };

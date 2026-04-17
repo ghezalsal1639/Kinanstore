@@ -91,7 +91,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       // 2. Look up the helper by email
-      const helperRecord = await findHelperByEmail(email);
+      let helperRecord;
+      try {
+        helperRecord = await findHelperByEmail(email);
+      } catch (dbErr: any) {
+        // If query fails because of rules, it might be due to auth sync lag
+        console.warn("Database query failed, retrying after auth sync...", dbErr);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        helperRecord = await findHelperByEmail(email);
+      }
       
       if (helperRecord && helperRecord.password === pass) {
         const sessionData = { id: helperRecord.id, email: helperRecord.email };
@@ -105,9 +113,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
         return false;
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Helper login process failed", e);
-      // We re-throw to be caught by the UI
+      // Ensure we clean up on error
+      if (auth.currentUser?.isAnonymous) {
+        await signOut(auth).catch(() => {});
+      }
       throw e;
     }
   };
