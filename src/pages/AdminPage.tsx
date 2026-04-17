@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { subscribeToOrders, updateOrderStatus, Order, OrderStatus, getAuthSettings, updateAuthSettings } from '../lib/data';
+import { subscribeToOrders, updateOrderStatus, Order, OrderStatus, getHelpers, subscribeToHelpers, addHelper, deleteHelper, Helper } from '../lib/data';
 import { Package, Phone, MapPin, Calendar, CheckCircle, Truck, RefreshCcw, XCircle, Clock, LogOut, TrendingUp, BarChart3, Home, Download, FileSpreadsheet, Settings, UserPlus, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../lib/AuthContext';
@@ -35,40 +35,45 @@ function AdminPage() {
   const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
   const { logout, isAdmin, isHelper } = useAuth();
   const [showSettings, setShowSettings] = useState(false);
-  const [helperEmails, setHelperEmails] = useState<string[]>([]);
+  const [helpers, setHelpers] = useState<Helper[]>([]);
   const [newHelperEmail, setNewHelperEmail] = useState('');
+  const [newHelperPassword, setNewHelperPassword] = useState('');
 
   useEffect(() => {
-    const unsubscribe = subscribeToOrders((data) => {
+    const unsubscribeOrders = subscribeToOrders((data) => {
       setOrders(data || []);
     });
 
+    let unsubscribeHelpers: (() => void) | undefined;
     if (isAdmin) {
-      getAuthSettings().then(settings => {
-        setHelperEmails(settings.helperEmails || []);
+      unsubscribeHelpers = subscribeToHelpers((data) => {
+        setHelpers(data);
       });
     }
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeOrders();
+      if (unsubscribeHelpers) unsubscribeHelpers();
+    };
   }, [isAdmin]);
 
   const handleAddHelper = async () => {
-    if (!newHelperEmail) return;
+    if (!newHelperEmail || !newHelperPassword) {
+      toast.error('يرجى ملأ جميع الحقول');
+      return;
+    }
     if (!newHelperEmail.includes('@')) {
       toast.error('يرجى إدخال بريد إلكتروني صحيح');
       return;
     }
-    const updated = [...helperEmails, newHelperEmail.toLowerCase()];
-    setHelperEmails(updated);
-    await updateAuthSettings({ helperEmails: updated });
+    await addHelper({ email: newHelperEmail.toLowerCase(), password: newHelperPassword });
     setNewHelperEmail('');
+    setNewHelperPassword('');
     toast.success('تم إضافة المساعد بنجاح');
   };
 
-  const handleRemoveHelper = async (email: string) => {
-    const updated = helperEmails.filter(e => e !== email);
-    setHelperEmails(updated);
-    await updateAuthSettings({ helperEmails: updated });
+  const handleRemoveHelper = async (id: string) => {
+    await deleteHelper(id);
     toast.success('تم حذف المساعد');
   };
 
@@ -380,39 +385,54 @@ function AdminPage() {
                 </button>
               </div>
 
-              <div className="mb-6">
-                <label className="block text-sm font-bold text-slate-700 mb-2">إضافة مساعد جديد (بالإيميل)</label>
-                <div className="flex gap-2">
+              <div className="mb-6 space-y-3">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">إضافة مساعد جديد</label>
                   <input 
                     type="email"
                     value={newHelperEmail}
                     onChange={(e) => setNewHelperEmail(e.target.value)}
-                    placeholder="example@gmail.com"
-                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                    placeholder="البريد الإلكتروني"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all mb-2"
                   />
-                  <button 
-                    onClick={handleAddHelper}
-                    className="bg-indigo-600 text-white p-2.5 rounded-xl hover:bg-indigo-700 transition-colors"
-                  >
-                    <UserPlus className="w-5 h-5" />
-                  </button>
+                  <div className="flex gap-2">
+                    <input 
+                      type="text"
+                      value={newHelperPassword}
+                      onChange={(e) => setNewHelperPassword(e.target.value)}
+                      placeholder="كلمة المرور"
+                      className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                    />
+                    <button 
+                      onClick={handleAddHelper}
+                      className="bg-indigo-600 text-white p-2.5 rounded-xl hover:bg-indigo-700 transition-colors"
+                    >
+                      <UserPlus className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
               <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
                 <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">قائمة المساعدين</p>
-                {helperEmails.length === 0 ? (
+                {helpers.length === 0 ? (
                   <p className="text-sm text-slate-400 text-center py-4 bg-slate-50 rounded-2xl">لا يوجد مساعدين مضافين حالياً</p>
                 ) : (
-                  helperEmails.map(email => (
-                    <div key={email} className="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-100 group">
-                      <span className="text-sm font-bold text-slate-700">{email}</span>
-                      <button 
-                        onClick={() => handleRemoveHelper(email)}
-                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                  helpers.map(helper => (
+                    <div key={helper.id} className="flex flex-col bg-slate-50 p-3 rounded-2xl border border-slate-100 group">
+                      <div className="flex items-center justify-between font-bold text-slate-700 text-sm">
+                        <span>{helper.email}</span>
+                        <button 
+                          onClick={() => handleRemoveHelper(helper.id)}
+                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="text-xs text-slate-400 mt-1 flex items-center gap-1">
+                        <span>كلمة المرور:</span>
+                        <span className="font-mono bg-white px-1.5 py-0.5 rounded border border-slate-200">{helper.password}</span>
+                      </div>
                     </div>
                   ))
                 )}

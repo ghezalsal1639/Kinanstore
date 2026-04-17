@@ -1,15 +1,17 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth } from './firebase';
-import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { subscribeToAuthSettings } from './data';
+import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User, signInAnonymously } from 'firebase/auth';
+import { Helper, subscribeToHelpers } from './data';
 
 interface AuthContextType {
   user: User | null;
+  helperUser: Helper | null;
   loading: boolean;
   isAdmin: boolean;
   isHelper: boolean;
   isStaff: boolean;
   login: () => Promise<void>;
+  helperLogin: (email: string, pass: string) => Promise<boolean>;
   logout: () => Promise<void>;
 }
 
@@ -17,22 +19,38 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [helperUser, setHelperUser] = useState<Helper | null>(null);
   const [loading, setLoading] = useState(true);
-  const [helperEmails, setHelperEmails] = useState<string[]>([]);
+  const [helpers, setHelpers] = useState<Helper[]>([]);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
+      
+      // Check if this anonymous user was previously logged in as a helper
+      if (currentUser?.isAnonymous) {
+        const savedHelper = localStorage.getItem('kk_helper_session');
+        if (savedHelper) {
+          try {
+            setHelperUser(JSON.parse(savedHelper));
+          } catch (e) {
+            localStorage.removeItem('kk_helper_session');
+          }
+        }
+      } else if (!currentUser) {
+        setHelperUser(null);
+        localStorage.removeItem('kk_helper_session');
+      }
     });
 
-    const unsubscribeSettings = subscribeToAuthSettings((settings) => {
-      setHelperEmails(settings.helperEmails || []);
+    const unsubscribeHelpers = subscribeToHelpers((data) => {
+      setHelpers(data);
     });
 
     return () => {
       unsubscribeAuth();
-      unsubscribeSettings();
+      unsubscribeHelpers();
     };
   }, []);
 
@@ -46,11 +64,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const logout = async () => {
-    await signOut(auth);
+  const helperLogin = async (email: string, pass: string) => {
+    const match = helpers.find(h => h.email.toLowerCase() === email.toLowerCase() && h.password === pass);
+    if (match) {
+      // 1. Sign in anonymously with Firebase to satisfy security rules (isSignedIn)
+      try {
+        await signInAnonymously(auth);
+        const sessionData = { id: match.id, email: match.email };
+        setHelperUser(sessionData);
+        localStorage.setItem('kk_helper_session', JSON.stringify(sessionData));
+        return true;
+      } catch (e) {
+        console.error("Anonymous auth failed", e);
+        return false;
+      }
+    }
+    return false;
   };
 
-  // Define administrators
+  const logout = async () => {
+    await signOut(auth);
+    setHelperUser(null);
+    localStorage.removeItem('kk_helper_session');
+  };
+
   const admins = [
     'salimgh1639@gmail.com', 
     'salimgh1639-sys@gmail.com', 
@@ -58,12 +95,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   ];
 
   const userEmail = user?.email?.toLowerCase() || '';
-  const isAdmin = admins.includes(userEmail);
-  const isHelper = helperEmails.map(e => e.toLowerCase()).includes(userEmail);
+  const isAdmin = !!(user && !user.isAnonymous && admins.includes(userEmail));
+  const isHelper = !!helperUser;
   const isStaff = isAdmin || isHelper;
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin, isHelper, isStaff, login, logout }}>
+    <AuthContext.Provider value={{ user, helperUser, loading, isAdmin, isHelper, isStaff, login, helperLogin, logout }}>
       {children}
     </AuthContext.Provider>
   );

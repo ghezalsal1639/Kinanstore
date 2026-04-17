@@ -36,19 +36,21 @@
       },
       "required": ["name", "price", "media", "date"]
     },
-    "Settings": {
-      "title": "Settings",
-      "description": "App settings",
+    "Helper": {
+      "title": "Helper",
+      "description": "A staff member account",
       "type": "object",
       "properties": {
-        "helperEmails": { "type": "array", "items": { "type": "string" } }
-      }
+        "email": { "type": "string" },
+        "password": { "type": "string" }
+      },
+      "required": ["email", "password"]
     }
   },
   "firestore": {
-    "/settings/{settingId}": {
-      "schema": { "$ref": "#/entities/Settings" },
-      "description": "Application settings"
+    "/helpers/{helperId}": {
+      "schema": { "$ref": "#/entities/Helper" },
+      "description": "Staff member accounts"
     },
     "/orders/{orderId}": {
       "schema": { "$ref": "#/entities/Order" },

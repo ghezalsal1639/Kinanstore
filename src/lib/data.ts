@@ -190,45 +190,47 @@ export const updateOrderStatus = async (id: string, status: OrderStatus) => {
   }
 };
 
-export interface AuthSettings {
-  helperEmails: string[];
+export interface Helper {
+  id: string;
+  email: string;
+  password?: string;
 }
 
-export const getAuthSettings = async (): Promise<AuthSettings> => {
-  const path = 'settings/auth';
+export const getHelpers = async (): Promise<Helper[]> => {
+  const path = 'helpers';
   try {
-    const docRef = doc(db, 'settings', 'auth');
-    const settingsDoc = await getDoc(docRef);
-    if (settingsDoc.exists()) {
-      return settingsDoc.data() as AuthSettings;
-    }
-    // Return default if doesn't exist
-    return { helperEmails: [] };
+    const snapshot = await getDocs(collection(db, 'helpers'));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Helper));
   } catch (error) {
-    handleFirestoreError(error, OperationType.GET, path);
-    return { helperEmails: [] };
+    handleFirestoreError(error, OperationType.LIST, path);
+    return [];
   }
 };
 
-export const subscribeToAuthSettings = (callback: (settings: AuthSettings) => void) => {
-  const path = 'settings/auth';
-  const docRef = doc(db, 'settings', 'auth');
-  return onSnapshot(docRef, (snapshot) => {
-    if (snapshot.exists()) {
-      callback(snapshot.data() as AuthSettings);
-    } else {
-      callback({ helperEmails: [] });
-    }
+export const subscribeToHelpers = (callback: (helpers: Helper[]) => void) => {
+  const path = 'helpers';
+  return onSnapshot(collection(db, 'helpers'), (snapshot) => {
+    callback(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Helper)));
   }, (error) => {
-    handleFirestoreError(error, OperationType.GET, path);
+    handleFirestoreError(error, OperationType.LIST, path);
   });
 };
 
-export const updateAuthSettings = async (settings: AuthSettings) => {
-  const path = 'settings/auth';
+export const addHelper = async (helper: Omit<Helper, 'id'>) => {
+  const path = 'helpers';
   try {
-    await setDoc(doc(db, 'settings', 'auth'), settings, { merge: true });
+    const docRef = await addDoc(collection(db, path), helper);
+    return { id: docRef.id, ...helper };
   } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, path);
+    handleFirestoreError(error, OperationType.CREATE, path);
+  }
+};
+
+export const deleteHelper = async (id: string) => {
+  const path = `helpers/${id}`;
+  try {
+    await deleteDoc(doc(db, 'helpers', id));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
   }
 };
