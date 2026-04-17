@@ -520,7 +520,7 @@ export default function ProductPage() {
                         ease: "circOut"
                       }}
                       style={{ originX: 0 }}
-                      className="absolute top-[55%] left-[-5%] w-[110%] h-[5px] bg-red-600/90 -translate-y-1/2 rotate-[-12deg] shadow-[0_0_15px_rgba(220,38,38,1)] z-10 rounded-full"
+                      className="absolute top-[62%] left-[-5%] w-[110%] h-[5px] bg-red-600/90 -translate-y-1/2 rotate-[-12deg] shadow-[0_0_15px_rgba(220,38,38,1)] z-10 rounded-full"
                     />
                   </div>
                 </motion.div>
