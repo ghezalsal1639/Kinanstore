@@ -370,13 +370,12 @@ export default function ProductPage() {
 
       {/* Header */}
       <header className="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100 shadow-sm">
-        <div className="max-w-md mx-auto px-4 h-28 flex items-center justify-between">
-          <div className="w-24"></div> {/* Balance spacer */}
-          <div className="flex flex-col items-center">
+        <div className="max-w-md mx-auto px-4 h-28 flex items-center">
+          <div className="flex-1 flex flex-col items-center text-center pr-6">
             <span className="font-black text-2xl tracking-tighter text-brand-teal uppercase leading-none">{appSettings.storeName || "KINAN STORE"}</span>
             <span className="text-[10px] font-bold text-brand-gold uppercase tracking-widest mt-1">Premium Quality</span>
           </div>
-          <div className="w-24 h-24 flex items-center justify-center p-1">
+          <div className="w-24 h-24 flex items-center justify-center p-1 shrink-0">
             <img src={appSettings.logoUrl || "/logo.png"} alt="Logo" className="w-full h-full object-contain" />
           </div>
         </div>
