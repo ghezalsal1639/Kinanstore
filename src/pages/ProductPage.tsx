@@ -99,6 +99,10 @@ export default function ProductPage() {
       : ["https://images.unsplash.com/photo-1608248543803-ba4f8c70ae0b?q=80&w=800&auto=format&fit=crop"];
   }, [product]);
 
+  const selectedOfferData = useMemo(() => {
+    return offers.find(o => o.id === formData.offer) || offers[0];
+  }, [offers, formData.offer]);
+
   useEffect(() => {
     if (!isAutoPlaying || !productImages || productImages.length <= 1) return;
 
@@ -461,16 +465,16 @@ export default function ProductPage() {
               }}
               className="relative"
             >
-              <div className="absolute inset-0 bg-brand-teal/10 blur-2xl rounded-full animate-pulse" />
+              <div className="absolute inset-0 bg-red-600/10 blur-2xl rounded-full animate-pulse" />
               <div className="relative flex items-end gap-1">
-                <span className="text-5xl font-black text-brand-teal drop-shadow-[0_0_15px_rgba(0,61,77,0.2)]">
-                  {product.price}
+                <span className="text-5xl font-black text-red-600 drop-shadow-[0_0_15px_rgba(220,38,38,0.2)]">
+                  {selectedOfferData?.price || product.price}
                 </span>
-                <span className="text-xl font-black text-brand-teal mb-2">دج</span>
+                <span className="text-xl font-black text-red-600 mb-2">دج</span>
               </div>
             </motion.div>
 
-            {product.oldPrice && (
+            {(selectedOfferData?.oldPrice || product.oldPrice) && (
               <div className="relative h-16 flex items-center px-6">
                 <motion.div 
                   initial={{ opacity: 0 }}
@@ -498,9 +502,9 @@ export default function ProductPage() {
                         repeat: Infinity,
                         times: [0, 0.3, 0.5, 1] 
                       }}
-                      className="text-2xl font-black tracking-tight whitespace-nowrap block"
+                      className="text-4xl font-black tracking-tight whitespace-nowrap block italic opacity-60"
                     >
-                      {product.oldPrice} دج
+                      {selectedOfferData?.oldPrice || product.oldPrice} دج
                     </motion.span>
 
                     {/* The Sharp Slash Line - Perfectly Sized to Text */}
@@ -516,7 +520,7 @@ export default function ProductPage() {
                         ease: "circOut"
                       }}
                       style={{ originX: 0 }}
-                      className="absolute top-[55%] left-[-5%] w-[110%] h-[4px] bg-red-600/90 -translate-y-1/2 rotate-[-12deg] shadow-[0_0_12px_rgba(220,38,38,1)] z-10 rounded-full"
+                      className="absolute top-[55%] left-[-5%] w-[110%] h-[5px] bg-red-600/90 -translate-y-1/2 rotate-[-12deg] shadow-[0_0_15px_rgba(220,38,38,1)] z-10 rounded-full"
                     />
                   </div>
                 </motion.div>
@@ -524,25 +528,25 @@ export default function ProductPage() {
             )}
           </div>
 
-          <div className="flex items-center gap-3 mb-6 bg-brand-teal/[0.03] border border-brand-teal/10 p-4 rounded-2xl" dir="rtl">
-            <div className="flex items-center gap-1.5 text-brand-gold font-black text-sm">
-              <Flame className="w-4 h-4 animate-pulse" />
+          <div className="flex items-center gap-3 mb-6 bg-red-600/5 border border-red-600/10 p-4 rounded-2xl" dir="rtl">
+            <div className="flex items-center gap-1.5 text-red-600 font-black text-sm">
+              <Flame className="w-4 h-4 animate-bounce" />
               تخفيضات حصرية تنتهي في:
             </div>
             <div className="flex items-center gap-1.5 mr-auto font-mono text-slate-900">
-              <div className="bg-white border border-brand-teal/5 px-2 py-0.5 rounded-lg shadow-sm flex flex-col items-center">
-                <span className="text-sm font-black text-brand-teal">{timeLeft.h.toString().padStart(2, '0')}</span>
-                <span className="text-[8px] font-bold text-slate-400">ساعة</span>
+              <div className="bg-red-600 px-2 py-0.5 rounded-lg shadow-lg flex flex-col items-center min-w-[36px]">
+                <span className="text-sm font-black text-white">{timeLeft.h.toString().padStart(2, '0')}</span>
+                <span className="text-[8px] font-bold text-white/70 tracking-tighter">ساعة</span>
               </div>
-              <span className="font-bold text-brand-gold animate-pulse">:</span>
-              <div className="bg-white border border-brand-teal/5 px-2 py-0.5 rounded-lg shadow-sm flex flex-col items-center">
-                <span className="text-sm font-black text-brand-teal">{timeLeft.m.toString().padStart(2, '0')}</span>
-                <span className="text-[8px] font-bold text-slate-400">دقيقة</span>
+              <span className="font-bold text-red-600 animate-pulse">:</span>
+              <div className="bg-red-600 px-2 py-0.5 rounded-lg shadow-lg flex flex-col items-center min-w-[36px]">
+                <span className="text-sm font-black text-white">{timeLeft.m.toString().padStart(2, '0')}</span>
+                <span className="text-[8px] font-bold text-white/70 tracking-tighter">دقيقة</span>
               </div>
-              <span className="font-bold text-brand-gold animate-pulse">:</span>
-              <div className="bg-white border border-brand-teal/5 px-2 py-0.5 rounded-lg shadow-sm flex flex-col items-center">
-                <span className="text-sm font-black text-brand-teal">{timeLeft.s.toString().padStart(2, '0')}</span>
-                <span className="text-[8px] font-bold text-slate-400">ثانية</span>
+              <span className="font-bold text-red-600 animate-pulse">:</span>
+              <div className="bg-white border-2 border-red-600 px-2 py-0.5 rounded-lg shadow-lg flex flex-col items-center min-w-[36px] animate-[pulse_0.5s_ease-in-out_infinite]">
+                <span className="text-sm font-black text-red-600">{timeLeft.s.toString().padStart(2, '0')}</span>
+                <span className="text-[8px] font-bold text-red-600/70 tracking-tighter">ثانية</span>
               </div>
             </div>
           </div>
@@ -650,8 +654,8 @@ export default function ProductPage() {
                         </div>
                       </div>
                       <div className="text-left shrink-0">
-                        <div className="font-black text-brand-teal text-lg whitespace-nowrap">{offer.price} دج</div>
-                        <div className="text-xs text-slate-400 line-through italic whitespace-nowrap">{offer.oldPrice} دج</div>
+                        <div className="font-black text-red-600 text-xl whitespace-nowrap">{offer.price} دج</div>
+                        <div className="text-sm text-slate-400 line-through italic whitespace-nowrap opacity-70">{offer.oldPrice} دج</div>
                       </div>
                     </div>
                   </label>
