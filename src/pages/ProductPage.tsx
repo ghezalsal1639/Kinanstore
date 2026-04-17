@@ -370,15 +370,14 @@ export default function ProductPage() {
 
       {/* Header */}
       <header className="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100 shadow-sm">
-        <div className="max-w-md mx-auto px-4 h-28 flex items-center justify-start flex-row-reverse">
-          <div className="flex items-center gap-5">
-            <div className="w-24 h-24 flex items-center justify-center p-1">
-              <img src={appSettings.logoUrl || "/logo.png"} alt="Logo" className="w-full h-full object-contain" />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-black text-3xl tracking-tighter text-brand-teal uppercase leading-none">{appSettings.storeName || "KINAN STORE"}</span>
-              <span className="text-sm font-bold text-brand-gold uppercase tracking-[0.3em] mt-2">Premium Quality</span>
-            </div>
+        <div className="max-w-md mx-auto px-4 h-28 flex items-center justify-between">
+          <div className="w-24"></div> {/* Balance spacer */}
+          <div className="flex flex-col items-center">
+            <span className="font-black text-2xl tracking-tighter text-brand-teal uppercase leading-none">{appSettings.storeName || "KINAN STORE"}</span>
+            <span className="text-[10px] font-bold text-brand-gold uppercase tracking-widest mt-1">Premium Quality</span>
+          </div>
+          <div className="w-24 h-24 flex items-center justify-center p-1">
+            <img src={appSettings.logoUrl || "/logo.png"} alt="Logo" className="w-full h-full object-contain" />
           </div>
         </div>
       </header>
