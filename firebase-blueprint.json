@@ -45,9 +45,22 @@
         "password": { "type": "string" }
       },
       "required": ["email", "password"]
+    },
+    "AppSettings": {
+      "title": "AppSettings",
+      "description": "Application wide settings",
+      "type": "object",
+      "properties": {
+        "logoUrl": { "type": "string", "description": "Base64 or URL of the logo" },
+        "storeName": { "type": "string" }
+      }
     }
   },
   "firestore": {
+    "/settings/app": {
+      "schema": { "$ref": "#/entities/AppSettings" },
+      "description": "Application settings"
+    },
     "/helpers/{helperId}": {
       "schema": { "$ref": "#/entities/Helper" },
       "description": "Staff member accounts"

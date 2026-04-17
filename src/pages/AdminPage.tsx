@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { subscribeToOrders, updateOrderStatus, Order, OrderStatus, getHelpers, subscribeToHelpers, addHelper, deleteHelper, Helper } from '../lib/data';
-import { Package, Phone, MapPin, Calendar, CheckCircle, Truck, RefreshCcw, XCircle, Clock, LogOut, TrendingUp, BarChart3, Home, Download, FileSpreadsheet, Settings, UserPlus, Trash2, X } from 'lucide-react';
+import { subscribeToOrders, updateOrderStatus, Order, OrderStatus, getHelpers, subscribeToHelpers, addHelper, deleteHelper, Helper, subscribeToAppSettings, updateAppSettings, AppSettings } from '../lib/data';
+import { Package, Phone, MapPin, Calendar, CheckCircle, Truck, RefreshCcw, XCircle, Clock, LogOut, TrendingUp, BarChart3, Home, Download, FileSpreadsheet, Settings, UserPlus, Trash2, X, ShoppingBag, ArrowRight, Upload, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../lib/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -38,10 +38,15 @@ function AdminPage() {
   const [helpers, setHelpers] = useState<Helper[]>([]);
   const [newHelperEmail, setNewHelperEmail] = useState('');
   const [newHelperPassword, setNewHelperPassword] = useState('');
+  const [appSettings, setAppSettings] = useState<AppSettings>({});
 
   useEffect(() => {
     const unsubscribeOrders = subscribeToOrders((data) => {
       setOrders(data || []);
+    });
+
+    const unsubscribeSettings = subscribeToAppSettings((settings) => {
+      setAppSettings(settings);
     });
 
     let unsubscribeHelpers: (() => void) | undefined;
@@ -53,9 +58,32 @@ function AdminPage() {
 
     return () => {
       unsubscribeOrders();
+      unsubscribeSettings();
       if (unsubscribeHelpers) unsubscribeHelpers();
     };
   }, [isAdmin]);
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 500 * 1024) {
+      toast.error('حجم الصورة كبير جداً، يرجى اختيار صورة أقل من 500 كيلوبايت');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64 = event.target?.result as string;
+      try {
+        await updateAppSettings({ logoUrl: base64, storeName: 'KINAN STORE' });
+        toast.success('تم تحديث الشعار بنجاح');
+      } catch (error) {
+        toast.error('فشل تحديث الشعار');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleAddHelper = async () => {
     const email = newHelperEmail.trim();
@@ -153,12 +181,17 @@ function AdminPage() {
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-6">
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <Link to="/" className="p-2 bg-white rounded-full shadow-sm hover:bg-slate-50 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-600"><path d="m15 18-6-6 6-6"/></svg>
+              <Link to="/" className="p-2.5 bg-white rounded-xl shadow-sm hover:bg-slate-50 transition-all border border-slate-100 flex items-center justify-center">
+                <ArrowRight className="w-5 h-5 text-slate-600" />
               </Link>
-              <h1 className="text-3xl font-bold text-slate-900">لوحة التحكم</h1>
+              <div className="flex items-center gap-3 mr-2">
+                <div className="w-14 h-14 flex items-center justify-center overflow-hidden">
+                  <img src={appSettings.logoUrl || "/logo.png"} alt="Logo" className="w-full h-full object-contain" />
+                </div>
+                <h1 className="text-3xl font-black text-brand-teal tracking-tighter uppercase">{appSettings.storeName || "KINAN STORE"}</h1>
+              </div>
             </div>
-            <p className="text-slate-500 mt-1">إدارة طلبيات K&K Store</p>
+            <p className="text-slate-500 mt-1 font-medium mr-12 opacity-70">إدارة طلبيات متجر كنان</p>
           </div>
           
           <div className="bg-white px-4 py-3 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center gap-6 w-full lg:w-auto">
@@ -177,7 +210,7 @@ function AdminPage() {
                     <Settings className="w-5 h-5" />
                   </button>
                   <div className="w-px h-6 bg-slate-200"></div>
-                  <Link to="/admin/products" className="text-sm font-bold text-slate-700 hover:text-rose-600 transition-colors flex items-center gap-2">
+                  <Link to="/admin/products" className="text-sm font-bold text-slate-700 hover:text-brand-gold transition-colors flex items-center gap-2">
                     <Package className="w-4 h-4" />
                     إدارة المنتجات
                   </Link>
@@ -203,7 +236,7 @@ function AdminPage() {
           <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar flex-1">
             <button 
               onClick={() => setFilter('all')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold whitespace-nowrap transition-all ${filter === 'all' ? 'bg-slate-900 text-white shadow-lg shadow-slate-200' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'}`}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold whitespace-nowrap transition-all ${filter === 'all' ? 'bg-brand-teal text-white shadow-lg shadow-brand-teal/20' : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'}`}
             >
               <span>الكل</span>
               <span className={`px-2 py-0.5 rounded-lg text-xs ${filter === 'all' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
@@ -384,10 +417,37 @@ function AdminPage() {
               <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-indigo-500 to-purple-600" />
               
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-black text-slate-900">إعدادات المساعدين</h2>
+                <h2 className="text-2xl font-black text-slate-900">الإعدادات العـامة</h2>
                 <button onClick={() => setShowSettings(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
                   <X className="w-6 h-6 text-slate-400" />
                 </button>
+              </div>
+
+              {/* Logo Management */}
+              <div className="mb-8 p-4 bg-brand-teal/[0.03] rounded-2xl border border-brand-teal/10">
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="w-5 h-5 text-brand-gold" />
+                  <h3 className="font-black text-brand-teal text-sm">شعار المتجر</h3>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-20 bg-white rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
+                    {appSettings.logoUrl ? (
+                      <img src={appSettings.logoUrl} alt="Preview" className="w-full h-full object-contain" />
+                    ) : (
+                      <ShoppingBag className="w-8 h-8 text-slate-200" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[10px] text-slate-400 font-bold mb-3 leading-relaxed">
+                      ارفع صورة اللوجو الخاصة بك هنا. يفضل أن تكون بخلفية شفافة (PNG) وبحجم أقل من 500KB.
+                    </p>
+                    <label className="inline-flex items-center gap-2 px-4 py-2 bg-brand-teal text-white text-xs font-black rounded-xl cursor-pointer hover:bg-brand-teal/90 transition-all shadow-sm">
+                      <Upload className="w-3.5 h-3.5" />
+                      رفع شعـار جديد
+                      <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                    </label>
+                  </div>
+                </div>
               </div>
 
               <div className="mb-6 space-y-3">

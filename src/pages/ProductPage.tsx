@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ShieldCheck, Package, Truck, Star, CheckCircle2, Lock, ChevronDown, X, Sparkles, CheckCircle, MapPin, Home, ChevronLeft, ChevronRight, Clock, Flame } from 'lucide-react';
+import { ShieldCheck, Package, Truck, Star, CheckCircle2, Lock, ChevronDown, X, Sparkles, CheckCircle, MapPin, Home, ChevronLeft, ChevronRight, Clock, Flame, ShoppingBag, Shield } from 'lucide-react';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { saveOrder, getProduct, Product } from '../lib/data';
+import { saveOrder, getProduct, Product, subscribeToAppSettings, AppSettings } from '../lib/data';
 import { ALGERIA_CITIES, Wilaya } from '../lib/algeria-cities';
 
 export default function ProductPage() {
@@ -58,7 +58,13 @@ export default function ProductPage() {
   }, [id]);
   
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [appSettings, setAppSettings] = useState<AppSettings>({});
   
+  useEffect(() => {
+    const unsubscribe = subscribeToAppSettings(setAppSettings);
+    return () => unsubscribe();
+  }, []);
+
   const [offers, setOffers] = useState<any[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
   const [variantType, setVariantType] = useState<'colors' | 'sizes' | 'none'>('none');
@@ -358,14 +364,25 @@ export default function ProductPage() {
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       {/* Top Announcement Bar */}
-      <div className="bg-rose-600 text-white text-center py-2 text-sm font-medium px-4">
-        🔥 عرض محدود: اطلب الآن وادفع عند الاستلام!
+      <div className="bg-brand-teal text-brand-gold-light text-center py-2 text-sm font-medium px-4 border-b border-brand-gold/20">
+        ✨ عرض فخم: اطلب الآن من {appSettings.storeName || "كنان ستور"} واستفد من التوصيل السريع!
       </div>
 
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-40">
-        <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-center">
-          <span className="font-extrabold text-2xl tracking-tight text-slate-900">K&K Store</span>
+      <header className="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100 shadow-sm">
+        <div className="max-w-md mx-auto px-4 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-14 h-14 flex items-center justify-center p-1">
+              <img src={appSettings.logoUrl || "/logo.png"} alt="Logo" className="w-full h-full object-contain" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-black text-xl tracking-tighter text-brand-teal uppercase leading-none">{appSettings.storeName || "KINAN STORE"}</span>
+              <span className="text-[10px] font-bold text-brand-gold uppercase tracking-[0.2em] mt-1">Premium Quality</span>
+            </div>
+          </div>
+          <div className="h-10 w-10 bg-brand-teal/5 rounded-full flex items-center justify-center text-brand-gold">
+             <Shield className="w-5 h-5" />
+          </div>
         </div>
       </header>
 
@@ -426,14 +443,14 @@ export default function ProductPage() {
         {/* Product Info */}
         <div className="p-5 border-b border-gray-100" dir="rtl">
           <div className="flex items-center gap-2 mb-2">
-            <span className="bg-rose-100 text-rose-700 text-xs font-bold px-2 py-1 rounded-md">الأكثر مبيعاً</span>
+            <span className="bg-brand-teal/10 text-brand-teal text-xs font-bold px-2 py-1 rounded-md">الأكثر مبيعاً</span>
             {product.isSecretPackaging && (
-              <span className="flex items-center text-emerald-600 text-xs font-bold bg-emerald-50 px-2 py-1 rounded-md">
+              <span className="flex items-center text-brand-gold text-xs font-bold bg-brand-gold/10 px-2 py-1 rounded-md">
                 <Lock className="w-3 h-3 ml-1" /> تغليف سري 100%
               </span>
             )}
           </div>
-          <h1 className="text-2xl font-black text-slate-900 mb-2 leading-tight">
+          <h1 className="text-2xl font-black text-brand-teal mb-2 leading-tight">
             {product.name}
           </h1>
           <div className="flex items-center gap-12 mb-5" dir="rtl">
@@ -449,12 +466,12 @@ export default function ProductPage() {
               }}
               className="relative"
             >
-              <div className="absolute inset-0 bg-rose-500/20 blur-2xl rounded-full animate-pulse" />
+              <div className="absolute inset-0 bg-brand-teal/10 blur-2xl rounded-full animate-pulse" />
               <div className="relative flex items-end gap-1">
-                <span className="text-5xl font-black text-rose-600 drop-shadow-[0_0_15px_rgba(225,29,72,0.5)]">
+                <span className="text-5xl font-black text-brand-teal drop-shadow-[0_0_15px_rgba(0,61,77,0.2)]">
                   {product.price}
                 </span>
-                <span className="text-xl font-black text-rose-600 mb-2">دج</span>
+                <span className="text-xl font-black text-brand-teal mb-2">دج</span>
               </div>
             </motion.div>
 
@@ -512,24 +529,24 @@ export default function ProductPage() {
             )}
           </div>
 
-          <div className="flex items-center gap-3 mb-6 bg-rose-50 border border-rose-100 p-3 rounded-2xl" dir="rtl">
-            <div className="flex items-center gap-1.5 text-rose-600 font-black text-sm">
+          <div className="flex items-center gap-3 mb-6 bg-brand-teal/[0.03] border border-brand-teal/10 p-4 rounded-2xl" dir="rtl">
+            <div className="flex items-center gap-1.5 text-brand-gold font-black text-sm">
               <Flame className="w-4 h-4 animate-pulse" />
-              تخفيضات تنتهي في:
+              تخفيضات حصرية تنتهي في:
             </div>
             <div className="flex items-center gap-1.5 mr-auto font-mono text-slate-900">
-              <div className="bg-white border border-rose-200 px-2 py-0.5 rounded-lg shadow-sm flex flex-col items-center">
-                <span className="text-sm font-black text-rose-600">{timeLeft.h.toString().padStart(2, '0')}</span>
+              <div className="bg-white border border-brand-teal/5 px-2 py-0.5 rounded-lg shadow-sm flex flex-col items-center">
+                <span className="text-sm font-black text-brand-teal">{timeLeft.h.toString().padStart(2, '0')}</span>
                 <span className="text-[8px] font-bold text-slate-400">ساعة</span>
               </div>
-              <span className="font-bold text-rose-300 animate-pulse">:</span>
-              <div className="bg-white border border-rose-200 px-2 py-0.5 rounded-lg shadow-sm flex flex-col items-center">
-                <span className="text-sm font-black text-rose-600">{timeLeft.m.toString().padStart(2, '0')}</span>
+              <span className="font-bold text-brand-gold animate-pulse">:</span>
+              <div className="bg-white border border-brand-teal/5 px-2 py-0.5 rounded-lg shadow-sm flex flex-col items-center">
+                <span className="text-sm font-black text-brand-teal">{timeLeft.m.toString().padStart(2, '0')}</span>
                 <span className="text-[8px] font-bold text-slate-400">دقيقة</span>
               </div>
-              <span className="font-bold text-rose-300 animate-pulse">:</span>
-              <div className="bg-white border border-rose-200 px-2 py-0.5 rounded-lg shadow-sm flex flex-col items-center">
-                <span className="text-sm font-black text-rose-600">{timeLeft.s.toString().padStart(2, '0')}</span>
+              <span className="font-bold text-brand-gold animate-pulse">:</span>
+              <div className="bg-white border border-brand-teal/5 px-2 py-0.5 rounded-lg shadow-sm flex flex-col items-center">
+                <span className="text-sm font-black text-brand-teal">{timeLeft.s.toString().padStart(2, '0')}</span>
                 <span className="text-[8px] font-bold text-slate-400">ثانية</span>
               </div>
             </div>
@@ -583,16 +600,16 @@ export default function ProductPage() {
         {/* Order Form Section */}
         <div id="order-form" className="p-5 pt-8" dir="rtl">
           <div className="flex items-center gap-2 mb-6">
-            <div className="w-8 h-8 bg-rose-600 text-white rounded-full flex items-center justify-center font-bold">1</div>
-            <h2 className="text-xl font-black text-slate-900">اختر العرض المناسب</h2>
+            <div className="w-8 h-8 bg-brand-teal text-white rounded-full flex items-center justify-center font-bold">1</div>
+            <h2 className="text-xl font-black text-brand-teal">اختر العرض المناسب</h2>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-10">
             {/* Offers Frame */}
-            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+            <div className="bg-white rounded-3xl border border-brand-teal/10 p-6 shadow-sm">
               <div className="flex items-center gap-2 mb-6">
-                <div className="w-8 h-8 bg-rose-600 text-white rounded-full flex items-center justify-center font-bold shadow-md shadow-rose-200">1</div>
-                <h2 className="text-xl font-bold text-slate-900">اختر العرض المناسب</h2>
+                <div className="w-8 h-8 bg-brand-teal text-white rounded-full flex items-center justify-center font-bold shadow-md shadow-brand-teal/20">1</div>
+                <h2 className="text-xl font-bold text-brand-teal">اختر العرض المناسب</h2>
               </div>
               
               <div className="space-y-3">
@@ -601,7 +618,7 @@ export default function ProductPage() {
                     key={offer.id}
                     className={`relative block p-4 rounded-2xl border-2 cursor-pointer transition-all ${
                       formData.offer === offer.id 
-                        ? 'border-rose-600 bg-rose-50' 
+                        ? 'border-brand-teal bg-brand-teal/[0.03]' 
                         : 'border-slate-100 bg-white'
                     }`}
                   >
@@ -614,21 +631,21 @@ export default function ProductPage() {
                       className="sr-only"
                     />
                     {offer.popular && (
-                      <div className="absolute top-0 left-4 -translate-y-1/2 bg-rose-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm z-10">
+                      <div className="absolute top-0 left-4 -translate-y-1/2 bg-brand-gold text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm z-10">
                         الأكثر طلباً
                       </div>
                     )}
                     <div className="flex justify-between items-center gap-4">
                       <div className="flex items-center gap-3">
-                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${formData.offer === offer.id ? 'border-rose-600' : 'border-slate-300'}`}>
-                          {formData.offer === offer.id && <div className="w-3 h-3 bg-rose-600 rounded-full" />}
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${formData.offer === offer.id ? 'border-brand-teal' : 'border-slate-300'}`}>
+                          {formData.offer === offer.id && <div className="w-3 h-3 bg-brand-teal rounded-full" />}
                         </div>
                         <div className="flex flex-col">
                           <div className="font-bold text-slate-900 leading-tight">
                             {offer.title.includes('(') ? (
                               <>
                                 <span>{offer.title.split('(')[0]}</span>
-                                <span className="block text-sm text-rose-600 font-bold mt-0.5">({offer.title.split('(')[1]}</span>
+                                <span className="block text-sm text-brand-teal font-bold mt-0.5">({offer.title.split('(')[1]}</span>
                               </>
                             ) : (
                               offer.title
@@ -638,7 +655,7 @@ export default function ProductPage() {
                         </div>
                       </div>
                       <div className="text-left shrink-0">
-                        <div className="font-black text-rose-600 text-lg whitespace-nowrap">{offer.price} دج</div>
+                        <div className="font-black text-brand-teal text-lg whitespace-nowrap">{offer.price} دج</div>
                         <div className="text-xs text-slate-400 line-through italic whitespace-nowrap">{offer.oldPrice} دج</div>
                       </div>
                     </div>
@@ -875,7 +892,7 @@ export default function ProductPage() {
             {/* Submit Button */}
             <button 
               type="submit"
-              className="w-full bg-rose-600 text-white font-black text-xl py-4 rounded-xl shadow-lg shadow-rose-200 flex items-center justify-center gap-2 mb-8"
+              className="w-full bg-brand-teal text-brand-gold-light font-black text-xl py-4 rounded-xl shadow-lg shadow-brand-teal/20 flex items-center justify-center gap-2 mb-8 hover:bg-brand-teal/90 transition-all border border-brand-gold/30"
             >
               <Truck className="w-6 h-6" />
               تأكيد الطلب الآن
@@ -884,9 +901,9 @@ export default function ProductPage() {
         </div>
         
         {/* Footer */}
-        <div className="py-8 text-center bg-slate-50 border-t border-gray-200">
-          <p className="text-sm text-slate-500">
-            &copy; {new Date().getFullYear()} K&K Store. جميع الحقوق محفوظة.
+        <div className="py-8 text-center bg-slate-50 border-t border-gray-100">
+          <p className="text-sm text-slate-500 font-bold uppercase tracking-tight">
+            &copy; {new Date().getFullYear()} {appSettings.storeName || "KINAN STORE"}. جميع الحقوق محفوظة.
           </p>
         </div>
       </main>

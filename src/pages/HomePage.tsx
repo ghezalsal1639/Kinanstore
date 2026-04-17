@@ -39,7 +39,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4 text-center">
       <Package className="w-16 h-16 text-slate-300 mb-4" />
-      <h1 className="text-2xl font-bold text-slate-900 mb-2">مرحباً بك في K&K Store</h1>
+      <h1 className="text-2xl font-bold text-slate-900 mb-2">مرحباً بك في KINAN STORE</h1>
       <p className="text-slate-500 mb-6">لا توجد منتجات معروضة حالياً. يرجى العودة لاحقاً.</p>
       <a 
         href="/admin" 

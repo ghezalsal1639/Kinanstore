@@ -246,6 +246,50 @@ export const findHelperByEmail = async (email: string): Promise<Helper | null> =
     return null;
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, path);
-    return null; // This won't be reached because handleFirestoreError throws
+    return null;
   }
+};
+
+export interface AppSettings {
+  logoUrl?: string; // Can be a URL or Base64 string
+  storeName?: string;
+}
+
+export const getAppSettings = async (): Promise<AppSettings> => {
+  const path = 'settings/app';
+  try {
+    const docRef = doc(db, 'settings', 'app');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data() as AppSettings;
+    }
+    return {};
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, path);
+    return {};
+  }
+};
+
+export const updateAppSettings = async (settings: Partial<AppSettings>) => {
+  const path = 'settings/app';
+  try {
+    const docRef = doc(db, 'settings', 'app');
+    await setDoc(docRef, settings, { merge: true });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+};
+
+export const subscribeToAppSettings = (callback: (settings: AppSettings) => void) => {
+  const path = 'settings/app';
+  const docRef = doc(db, 'settings', 'app');
+  return onSnapshot(docRef, (docSnap) => {
+    if (docSnap.exists()) {
+      callback(docSnap.data() as AppSettings);
+    } else {
+      callback({});
+    }
+  }, (error) => {
+    handleFirestoreError(error, OperationType.GET, path);
+  });
 };

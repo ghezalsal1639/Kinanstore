@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
-import { Shield, Lock, User, ArrowLeft } from 'lucide-react';
+import { Shield, Lock, User, ArrowLeft, ShoppingBag } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { subscribeToAppSettings, AppSettings } from '../lib/data';
 
 export default function AdminLogin() {
   const { user, helperUser, isAdmin, isHelper, login, helperLogin, loading } = useAuth();
@@ -10,6 +11,12 @@ export default function AdminLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [appSettings, setAppSettings] = useState<AppSettings>({});
+
+  useEffect(() => {
+    const unsubscribe = subscribeToAppSettings(setAppSettings);
+    return () => unsubscribe();
+  }, []);
 
   if (loading) {
     return <div className="min-h-screen bg-slate-100" />;
@@ -59,14 +66,14 @@ export default function AdminLogin() {
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4" dir="rtl">
       <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-200 max-w-md w-full relative overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-slate-900 to-slate-700" />
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-brand-teal" />
         
-        <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-slate-100">
-          <Shield className="w-10 h-10 text-slate-800" />
+        <div className="w-24 h-24 flex items-center justify-center mx-auto mb-6 overflow-hidden">
+          <img src={appSettings.logoUrl || "/logo.png"} alt="Logo" className="w-full h-full object-contain" />
         </div>
 
-        <h1 className="text-2xl font-black text-slate-900 text-center mb-2">لوحة تحكم المتجر</h1>
-        <p className="text-slate-500 text-center mb-8 text-sm font-medium">اختر طريقة تسجيل الدخول للمتابعة</p>
+        <h1 className="text-3xl font-black text-brand-teal text-center mb-2 tracking-tighter uppercase">{appSettings.storeName || "KINAN STORE"}</h1>
+        <p className="text-slate-500 text-center mb-8 text-sm font-medium">لوحة الإدارة - سجل الدخول للمتابعة</p>
         
         {/* Toggle Switches */}
         <div className="flex p-1 bg-slate-100 rounded-2xl mb-8 relative">
@@ -97,7 +104,7 @@ export default function AdminLogin() {
             
             <button
               onClick={handleAdminLogin}
-              className="w-full bg-slate-900 text-white px-6 py-4 rounded-2xl font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-3 shadow-lg shadow-slate-200"
+              className="w-full bg-brand-teal text-white px-6 py-4 rounded-2xl font-bold hover:bg-brand-teal/90 transition-all flex items-center justify-center gap-3 shadow-lg shadow-brand-teal/20"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -118,7 +125,7 @@ export default function AdminLogin() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="البريد الإلكتروني"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl pr-12 pl-4 py-4 text-sm font-bold outline-none focus:ring-2 focus:ring-slate-900 transition-all text-right"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl pr-12 pl-4 py-4 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-teal transition-all text-right"
                   required
                 />
               </div>
@@ -129,7 +136,7 @@ export default function AdminLogin() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="كلمة المرور"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl pr-12 pl-4 py-4 text-sm font-bold outline-none focus:ring-2 focus:ring-slate-900 transition-all text-right"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl pr-12 pl-4 py-4 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-teal transition-all text-right"
                   required
                 />
               </div>
@@ -138,7 +145,7 @@ export default function AdminLogin() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-slate-900 text-white px-6 py-4 rounded-2xl font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-3 shadow-lg shadow-slate-200 disabled:opacity-50"
+              className="w-full bg-brand-teal text-white px-6 py-4 rounded-2xl font-bold hover:bg-brand-teal/90 transition-all flex items-center justify-center gap-3 shadow-lg shadow-brand-teal/20 disabled:opacity-50"
             >
               {isSubmitting ? 'جاري التحقق...' : (
                 <>

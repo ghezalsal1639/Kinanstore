@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getProducts, deleteProduct, updateProduct, Product } from '../lib/data';
-import { Package, Plus, Trash2, Edit2, Image as ImageIcon, ArrowRight, Upload, X, CheckCircle, XCircle, LogOut, Link as LinkIcon, Crop as CropIcon, Sparkles, RefreshCcw } from 'lucide-react';
+import { getProducts, deleteProduct, updateProduct, Product, subscribeToAppSettings, AppSettings } from '../lib/data';
+import { Package, Plus, Trash2, Edit2, Image as ImageIcon, ArrowRight, Upload, X, CheckCircle, XCircle, LogOut, Link as LinkIcon, Crop as CropIcon, Sparkles, RefreshCcw, ShoppingBag } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -66,6 +66,12 @@ export default function AdminProductsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const { logout } = useAuth();
+  const [appSettings, setAppSettings] = useState<AppSettings>({});
+
+  useEffect(() => {
+    const unsubscribe = subscribeToAppSettings(setAppSettings);
+    return () => unsubscribe();
+  }, []);
 
   // Form state
   const [name, setName] = useState('');
@@ -372,12 +378,17 @@ export default function AdminProductsPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <Link to="/admin" className="p-2 bg-white rounded-full shadow-sm hover:bg-slate-50 transition-colors">
+              <Link to="/admin" className="p-2.5 bg-white rounded-xl shadow-sm hover:bg-slate-50 transition-all border border-slate-100 flex items-center justify-center">
                 <ArrowRight className="w-5 h-5 text-slate-600" />
               </Link>
-              <h1 className="text-3xl font-bold text-slate-900">إدارة المنتجات</h1>
+              <div className="flex items-center gap-3 mr-2">
+                <div className="w-14 h-14 flex items-center justify-center overflow-hidden">
+                  <img src={appSettings.logoUrl || "/logo.png"} alt="Logo" className="w-full h-full object-contain" />
+                </div>
+                <h1 className="text-3xl font-black text-brand-teal tracking-tighter uppercase">{appSettings.storeName || "KINAN STORE"}</h1>
+              </div>
             </div>
-            <p className="text-slate-500 mt-1">أضف منتجات جديدة لمتجرك</p>
+            <p className="text-slate-500 mt-1 font-medium mr-12 opacity-70">إدارة منتجات متجر كنان</p>
           </div>
           
           <div className="flex items-center gap-3">
@@ -386,7 +397,7 @@ export default function AdminProductsPage() {
             </button>
             <button 
               onClick={() => setIsAdding(!isAdding)}
-              className="bg-slate-900 text-white px-6 py-3 rounded-xl shadow-sm hover:bg-slate-800 transition-colors flex items-center gap-2 font-medium"
+              className="bg-brand-teal text-white px-6 py-3 rounded-xl shadow-lg shadow-brand-teal/20 hover:bg-brand-teal/90 transition-all flex items-center gap-2 font-bold"
             >
               {isAdding ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
               {isAdding ? 'إلغاء' : 'إضافة منتج جديد'}
