@@ -66,10 +66,12 @@ function AdminPage() {
       toast.error('يرجى إدخال بريد إلكتروني صحيح');
       return;
     }
-    await addHelper({ email: newHelperEmail.toLowerCase(), password: newHelperPassword });
-    setNewHelperEmail('');
-    setNewHelperPassword('');
-    toast.success('تم إضافة المساعد بنجاح');
+    const result = await addHelper({ email: newHelperEmail.toLowerCase(), password: newHelperPassword });
+    if (result) {
+      setNewHelperEmail('');
+      setNewHelperPassword('');
+      toast.success('تم إضافة المساعد بنجاح');
+    }
   };
 
   const handleRemoveHelper = async (id: string) => {

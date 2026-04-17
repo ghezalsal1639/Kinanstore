@@ -28,5 +28,9 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    match /helpers/{helperId} {
+      allow read, write: if isAdmin();
+    }
   }
 }
