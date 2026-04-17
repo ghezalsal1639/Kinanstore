@@ -30,7 +30,8 @@ service cloud.firestore {
     }
 
     match /helpers/{helperId} {
-      allow read, write: if isAdmin();
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
   }
 }

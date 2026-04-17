@@ -1,4 +1,4 @@
-import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, getDocFromServer, setDoc } from 'firebase/firestore';
+import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, getDocFromServer, setDoc, where } from 'firebase/firestore';
 import { db, auth } from './firebase';
 
 enum OperationType {
@@ -232,5 +232,20 @@ export const deleteHelper = async (id: string) => {
     await deleteDoc(doc(db, 'helpers', id));
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
+  }
+};
+
+export const findHelperByEmail = async (email: string): Promise<Helper | null> => {
+  const path = 'helpers';
+  try {
+    const q = query(collection(db, path), where('email', '==', email.toLowerCase()));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Helper;
+    }
+    return null;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, path);
+    return null;
   }
 };

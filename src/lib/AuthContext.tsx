@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth } from './firebase';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User, signInAnonymously } from 'firebase/auth';
-import { Helper, subscribeToHelpers } from './data';
+import { Helper, subscribeToHelpers, findHelperByEmail } from './data';
 
 interface AuthContextType {
   user: User | null;
@@ -24,10 +24,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [helpers, setHelpers] = useState<Helper[]>([]);
 
   useEffect(() => {
+    let unsubscribeHelpers: (() => void) | undefined;
+
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
       
+      // If we are logged in as admin, subscribe to helpers for management
+      const admins = [
+        'salimgh1639@gmail.com', 
+        'salimgh1639-sys@gmail.com', 
+        'ghezalsal1639@gmail.com'
+      ];
+      const isActuallyAdmin = !!(currentUser && !currentUser.isAnonymous && admins.includes(currentUser.email?.toLowerCase() || ''));
+
+      if (isActuallyAdmin && !unsubscribeHelpers) {
+        unsubscribeHelpers = subscribeToHelpers((data) => {
+          setHelpers(data);
+        });
+      }
+
       // Check if this anonymous user was previously logged in as a helper
       if (currentUser?.isAnonymous) {
         const savedHelper = localStorage.getItem('kk_helper_session');
@@ -44,13 +60,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     });
 
-    const unsubscribeHelpers = subscribeToHelpers((data) => {
-      setHelpers(data);
-    });
-
     return () => {
       unsubscribeAuth();
-      unsubscribeHelpers();
+      if (unsubscribeHelpers) unsubscribeHelpers();
     };
   }, []);
 
@@ -65,21 +77,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const helperLogin = async (email: string, pass: string) => {
-    const match = helpers.find(h => h.email.toLowerCase() === email.toLowerCase() && h.password === pass);
-    if (match) {
-      // 1. Sign in anonymously with Firebase to satisfy security rules (isSignedIn)
-      try {
+    try {
+      // 1. Sign in anonymously first to get permission to query the helpers collection
+      if (!auth.currentUser) {
         await signInAnonymously(auth);
-        const sessionData = { id: match.id, email: match.email };
+      }
+
+      // 2. Look up the helper by email
+      const helperRecord = await findHelperByEmail(email);
+      
+      if (helperRecord && helperRecord.password === pass) {
+        const sessionData = { id: helperRecord.id, email: helperRecord.email };
         setHelperUser(sessionData);
         localStorage.setItem('kk_helper_session', JSON.stringify(sessionData));
         return true;
-      } catch (e) {
-        console.error("Anonymous auth failed", e);
+      } else {
+        // If it failed and we just signed in anonymously, sign out to be clean
+        if (auth.currentUser?.isAnonymous) {
+          await signOut(auth);
+        }
         return false;
       }
+    } catch (e) {
+      console.error("Helper login process failed", e);
+      // Clean up on error
+      if (auth.currentUser?.isAnonymous) {
+        await signOut(auth);
+      }
+      return false;
     }
-    return false;
   };
 
   const logout = async () => {
