@@ -73,6 +73,7 @@ export interface Order {
   wilaya: string;
   commune: string;
   address?: string;
+  deliveryMethod: string;
   offer: string;
   flavor?: string;
   status: OrderStatus;

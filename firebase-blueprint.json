@@ -9,6 +9,8 @@
         "phone": { "type": "string" },
         "wilaya": { "type": "string" },
         "commune": { "type": "string" },
+        "address": { "type": "string" },
+        "deliveryMethod": { "type": "string", "enum": ["home", "office"] },
         "offer": { "type": "string" },
         "flavor": { "type": "string" },
         "status": { "type": "string", "enum": ["new", "confirmed", "shipped", "delivered", "returned"] },

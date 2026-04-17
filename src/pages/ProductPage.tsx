@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ShieldCheck, Package, Truck, Star, CheckCircle2, Lock, ChevronDown, X, Sparkles, CheckCircle, MapPin, Home, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShieldCheck, Package, Truck, Star, CheckCircle2, Lock, ChevronDown, X, Sparkles, CheckCircle, MapPin, Home, ChevronLeft, ChevronRight, Clock, Flame } from 'lucide-react';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'motion/react';
@@ -15,7 +15,47 @@ export default function ProductPage() {
   
   const [activeImage, setActiveImage] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [timeLeft, setTimeLeft] = useState<{h: number, m: number, s: number}>({ h: 0, m: 0, s: 0 });
   const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  // Initialize countdown with a random value between 2 and 8 hours
+  useEffect(() => {
+    const storageKey = `countdown_${id || 'default'}`;
+    const savedEndTime = localStorage.getItem(storageKey);
+    let endTime: number;
+
+    if (savedEndTime) {
+      endTime = parseInt(savedEndTime);
+      // If saved time is in the past, reset it
+      if (endTime < Date.now()) {
+        const randomHours = Math.floor(Math.random() * 6) + 2; // 2 to 7 hours
+        endTime = Date.now() + (randomHours * 3600 * 1000);
+        localStorage.setItem(storageKey, endTime.toString());
+      }
+    } else {
+      const randomHours = Math.floor(Math.random() * 6) + 2;
+      endTime = Date.now() + (randomHours * 3600 * 1000);
+      localStorage.setItem(storageKey, endTime.toString());
+    }
+
+    const timer = setInterval(() => {
+      const now = Date.now();
+      const distance = endTime - now;
+
+      if (distance < 0) {
+        clearInterval(timer);
+        return;
+      }
+
+      setTimeLeft({
+        h: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+        m: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
+        s: Math.floor((distance % (1000 * 60)) / 1000)
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [id]);
   
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   
@@ -30,6 +70,7 @@ export default function ProductPage() {
     wilaya: '',
     commune: '',
     address: '',
+    deliveryMethod: 'home',
     offer: '1-pack',
     selectedVariants: {} as Record<string, number>,
   });
@@ -235,7 +276,7 @@ export default function ProductPage() {
       phone: !formData.phone.trim() || !isPhoneValid,
       wilaya: !formData.wilaya,
       commune: !formData.commune,
-      address: !formData.address.trim(),
+      address: formData.deliveryMethod === 'home' ? !formData.address.trim() : false,
     };
     
     // Reset errors first to allow re-triggering animation
@@ -275,6 +316,8 @@ export default function ProductPage() {
         phone: formData.phone,
         wilaya: formData.wilaya,
         commune: formData.commune,
+        address: formData.deliveryMethod === 'home' ? formData.address : 'توصيل للمكتب',
+        deliveryMethod: formData.deliveryMethod,
         offer: `${product.name} - ${selectedOffer?.title}`,
         flavor: variantNames,
         totalPrice: selectedOffer?.price || product.price,
@@ -301,6 +344,8 @@ export default function ProductPage() {
         phone: '',
         wilaya: '',
         commune: '',
+        address: '',
+        deliveryMethod: 'home',
         offer: '1-pack',
         selectedVariants: initialVariants,
       });
@@ -326,10 +371,10 @@ export default function ProductPage() {
 
       <main className="max-w-md mx-auto bg-white min-h-screen shadow-xl">
         {/* Product Image Gallery (Swipeable) */}
-        <div className="relative w-full aspect-square bg-white border-b border-gray-100 group" dir="ltr">
+        <div className="relative w-full aspect-square bg-white group p-4" dir="ltr">
           <div 
             ref={scrollRef}
-            className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar w-full h-full scroll-smooth"
+            className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar w-full h-full scroll-smooth rounded-[2.5rem] shadow-inner bg-slate-50"
             onScroll={handleManualScroll}
             onTouchStart={() => setIsAutoPlaying(false)}
             onMouseDown={() => setIsAutoPlaying(false)}
@@ -370,17 +415,12 @@ export default function ProductPage() {
 
           {/* Active Image Indicator (Counter style for cleaner look) */}
           {productImages.length > 1 && (
-            <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md text-white px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-lg border border-white/10 z-10" dir="rtl">
+            <div className="absolute bottom-8 left-8 bg-black/60 backdrop-blur-md text-white px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 shadow-lg border border-white/10 z-10" dir="rtl">
               <span className="text-rose-400">{activeImage + 1}</span>
               <span className="opacity-40">/</span>
               <span>{productImages.length}</span>
             </div>
           )}
-
-          <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full shadow-sm flex items-center gap-1" dir="rtl">
-            <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-            <span className="text-sm font-bold text-slate-800">4.9</span>
-          </div>
         </div>
 
         {/* Product Info */}
@@ -396,11 +436,103 @@ export default function ProductPage() {
           <h1 className="text-2xl font-black text-slate-900 mb-2 leading-tight">
             {product.name}
           </h1>
-          <div className="flex items-end gap-3 mb-4">
-            <span className="text-3xl font-black text-rose-600">{product.price} <span className="text-lg">دج</span></span>
+          <div className="flex items-center gap-12 mb-5" dir="rtl">
+            <motion.div 
+              animate={{ 
+                scale: [1, 1.05, 1],
+                rotate: [0, -1, 1, -1, 0],
+              }}
+              transition={{ 
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="relative"
+            >
+              <div className="absolute inset-0 bg-rose-500/20 blur-2xl rounded-full animate-pulse" />
+              <div className="relative flex items-end gap-1">
+                <span className="text-5xl font-black text-rose-600 drop-shadow-[0_0_15px_rgba(225,29,72,0.5)]">
+                  {product.price}
+                </span>
+                <span className="text-xl font-black text-rose-600 mb-2">دج</span>
+              </div>
+            </motion.div>
+
             {product.oldPrice && (
-              <span className="text-lg text-slate-400 line-through mb-1">{product.oldPrice} دج</span>
+              <div className="relative h-16 flex items-center px-6">
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ 
+                    opacity: [0, 1, 1, 0],
+                    y: [0, 0, 0, 15],
+                    rotate: [0, 0, 0, 5]
+                  }}
+                  transition={{ 
+                    duration: 3, 
+                    repeat: Infinity,
+                    times: [0, 0.1, 0.8, 1],
+                    ease: "easeInOut"
+                  }}
+                  className="relative inline-block"
+                >
+                  <div className="relative">
+                    {/* The Old Price Text */}
+                    <motion.span 
+                      animate={{ 
+                        color: ["#64748b", "#64748b", "#f97316", "#ef4444"],
+                      }}
+                      transition={{ 
+                        duration: 3, 
+                        repeat: Infinity,
+                        times: [0, 0.3, 0.5, 1] 
+                      }}
+                      className="text-2xl font-black tracking-tight whitespace-nowrap block"
+                    >
+                      {product.oldPrice} دج
+                    </motion.span>
+
+                    {/* The Sharp Slash Line - Perfectly Sized to Text */}
+                    <motion.div 
+                      initial={{ scaleX: 0 }}
+                      animate={{ 
+                        scaleX: [0, 0, 1.1, 1.1],
+                      }}
+                      transition={{ 
+                        duration: 3, 
+                        repeat: Infinity,
+                        times: [0, 0.3, 0.45, 1],
+                        ease: "circOut"
+                      }}
+                      style={{ originX: 0 }}
+                      className="absolute top-[55%] left-[-5%] w-[110%] h-[4px] bg-red-600/90 -translate-y-1/2 rotate-[-12deg] shadow-[0_0_12px_rgba(220,38,38,1)] z-10 rounded-full"
+                    />
+                  </div>
+                </motion.div>
+              </div>
             )}
+          </div>
+
+          <div className="flex items-center gap-3 mb-6 bg-rose-50 border border-rose-100 p-3 rounded-2xl" dir="rtl">
+            <div className="flex items-center gap-1.5 text-rose-600 font-black text-sm">
+              <Flame className="w-4 h-4 animate-pulse" />
+              تخفيضات تنتهي في:
+            </div>
+            <div className="flex items-center gap-1.5 mr-auto font-mono text-slate-900">
+              <div className="bg-white border border-rose-200 px-2 py-0.5 rounded-lg shadow-sm flex flex-col items-center">
+                <span className="text-sm font-black text-rose-600">{timeLeft.h.toString().padStart(2, '0')}</span>
+                <span className="text-[8px] font-bold text-slate-400">ساعة</span>
+              </div>
+              <span className="font-bold text-rose-300 animate-pulse">:</span>
+              <div className="bg-white border border-rose-200 px-2 py-0.5 rounded-lg shadow-sm flex flex-col items-center">
+                <span className="text-sm font-black text-rose-600">{timeLeft.m.toString().padStart(2, '0')}</span>
+                <span className="text-[8px] font-bold text-slate-400">دقيقة</span>
+              </div>
+              <span className="font-bold text-rose-300 animate-pulse">:</span>
+              <div className="bg-white border border-rose-200 px-2 py-0.5 rounded-lg shadow-sm flex flex-col items-center">
+                <span className="text-sm font-black text-rose-600">{timeLeft.s.toString().padStart(2, '0')}</span>
+                <span className="text-[8px] font-bold text-slate-400">ثانية</span>
+              </div>
+            </div>
           </div>
           <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap mb-6">
             {product.description || 'منتج عالي الجودة ومضمون. اطلب الآن واستفد من العرض.'}
@@ -455,70 +587,86 @@ export default function ProductPage() {
             <h2 className="text-xl font-black text-slate-900">اختر العرض المناسب</h2>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Offers */}
-            <div className="space-y-3">
-              {offers.map((offer) => (
-                <label 
-                  key={offer.id}
-                  className={`relative block p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                    formData.offer === offer.id 
-                      ? 'border-rose-600 bg-rose-50' 
-                      : 'border-gray-200 bg-white'
-                  }`}
-                >
-                  <input 
-                    type="radio" 
-                    name="offer" 
-                    value={offer.id}
-                    checked={formData.offer === offer.id}
-                    onChange={() => handleOfferChange(offer.id)}
-                    className="sr-only"
-                  />
-                  {offer.popular && (
-                    <div className="absolute top-0 left-4 -translate-y-1/2 bg-rose-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
-                      الأكثر طلباً
-                    </div>
-                  )}
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${formData.offer === offer.id ? 'border-rose-600' : 'border-gray-300'}`}>
-                          {formData.offer === offer.id && <div className="w-2.5 h-2.5 bg-rose-600 rounded-full" />}
-                        </div>
-                        <span className="font-bold text-slate-900">{offer.title}</span>
+          <form onSubmit={handleSubmit} className="space-y-10">
+            {/* Offers Frame */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="w-8 h-8 bg-rose-600 text-white rounded-full flex items-center justify-center font-bold shadow-md shadow-rose-200">1</div>
+                <h2 className="text-xl font-bold text-slate-900">اختر العرض المناسب</h2>
+              </div>
+              
+              <div className="space-y-3">
+                {offers.map((offer) => (
+                  <label 
+                    key={offer.id}
+                    className={`relative block p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                      formData.offer === offer.id 
+                        ? 'border-rose-600 bg-rose-50' 
+                        : 'border-slate-100 bg-white'
+                    }`}
+                  >
+                    <input 
+                      type="radio" 
+                      name="offer" 
+                      value={offer.id}
+                      checked={formData.offer === offer.id}
+                      onChange={() => handleOfferChange(offer.id)}
+                      className="sr-only"
+                    />
+                    {offer.popular && (
+                      <div className="absolute top-0 left-4 -translate-y-1/2 bg-rose-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm z-10">
+                        الأكثر طلباً
                       </div>
-                      <span className="text-sm text-slate-500 mr-7">{offer.desc}</span>
+                    )}
+                    <div className="flex justify-between items-center gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${formData.offer === offer.id ? 'border-rose-600' : 'border-slate-300'}`}>
+                          {formData.offer === offer.id && <div className="w-3 h-3 bg-rose-600 rounded-full" />}
+                        </div>
+                        <div className="flex flex-col">
+                          <div className="font-bold text-slate-900 leading-tight">
+                            {offer.title.includes('(') ? (
+                              <>
+                                <span>{offer.title.split('(')[0]}</span>
+                                <span className="block text-sm text-rose-600 font-bold mt-0.5">({offer.title.split('(')[1]}</span>
+                              </>
+                            ) : (
+                              offer.title
+                            )}
+                          </div>
+                          <div className="text-[11px] text-slate-400 mt-0.5">{offer.desc}</div>
+                        </div>
+                      </div>
+                      <div className="text-left shrink-0">
+                        <div className="font-black text-rose-600 text-lg whitespace-nowrap">{offer.price} دج</div>
+                        <div className="text-xs text-slate-400 line-through italic whitespace-nowrap">{offer.oldPrice} دج</div>
+                      </div>
                     </div>
-                    <div className="text-left">
-                      <div className="font-black text-rose-600 text-lg">{offer.price} دج</div>
-                      <div className="text-xs text-slate-400 line-through">{offer.oldPrice} دج</div>
-                    </div>
-                  </div>
-                </label>
-              ))}
+                  </label>
+                ))}
+              </div>
             </div>
 
-            {/* Variants (Colors or Sizes) */}
+            {/* Variants (Colors or Sizes) Frame */}
             {variants.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 bg-rose-600 text-white rounded-full flex items-center justify-center font-bold">2</div>
-                  <h2 className="text-xl font-black text-slate-900">
+              <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="w-8 h-8 bg-rose-600 text-white rounded-full flex items-center justify-center font-bold shadow-md shadow-rose-200">2</div>
+                  <h2 className="text-xl font-bold text-slate-900">
                     اختر {variantNameDisplay}
                   </h2>
                 </div>
                 
                 {offers.find(o => o.id === formData.offer)?.count! > 1 && (
-                  <div className="flex items-center justify-between bg-rose-50 border border-rose-100 p-3 rounded-xl mb-4">
-                    <span className="text-sm font-bold text-rose-800">الكمية المتبقية للاختيار:</span>
-                    <span className="font-black text-lg text-rose-600">
+                  <div className="flex items-center justify-between bg-emerald-50 border border-emerald-100 p-3 rounded-xl mb-6">
+                    <span className="text-sm font-bold text-emerald-800">الكمية المتبقية للاختيار:</span>
+                    <span className="font-black text-lg text-emerald-600">
                       {offers.find(o => o.id === formData.offer)?.count! - (Object.values(formData.selectedVariants).reduce((a: number, b: number) => a + b, 0) as number)} حبات
                     </span>
                   </div>
                 )}
                 
-                <div className={`grid gap-2 ${offers.find(o => o.id === formData.offer)?.count! > 1 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                <div className={`grid gap-3 ${offers.find(o => o.id === formData.offer)?.count! > 1 ? 'grid-cols-2' : 'grid-cols-2'}`}>
                   {variants.map((variant) => {
                     const count = formData.selectedVariants[variant.id] || 0;
                     const isSelected = count > 0;
@@ -540,11 +688,11 @@ export default function ProductPage() {
                             }
                           }
                         }}
-                        className={`relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all cursor-pointer min-h-[80px] ${
+                        className={`relative flex flex-col items-center justify-center p-5 rounded-2xl border-2 transition-all cursor-pointer min-h-[90px] ${
                           isSelected 
-                            ? 'border-rose-600 bg-rose-50 shadow-sm' 
-                            : 'border-gray-200 bg-white hover:border-gray-300'
-                        } ${maxCount > 1 && currentTotal >= maxCount && !isSelected ? 'opacity-50 grayscale' : ''}`}
+                            ? 'border-rose-600 bg-rose-50' 
+                            : 'border-slate-100 bg-slate-50 hover:bg-white hover:border-slate-200'
+                        } ${maxCount > 1 && currentTotal >= maxCount && !isSelected ? 'opacity-50 grayscale pointer-events-none' : ''}`}
                       >
                         {maxCount > 1 && isSelected && (
                           <button
@@ -553,14 +701,14 @@ export default function ProductPage() {
                               e.stopPropagation();
                               handleVariantChange(variant.id, -1);
                             }}
-                            className="absolute top-1 left-1 w-6 h-6 bg-white border border-rose-200 text-rose-600 rounded-full flex items-center justify-center hover:bg-rose-100 shadow-sm z-10"
+                            className="absolute -top-2 -left-2 w-7 h-7 bg-white border border-rose-200 text-rose-600 rounded-full flex items-center justify-center hover:bg-rose-100 shadow-md z-10"
                           >
-                            <X className="w-3.5 h-3.5" />
+                            <X className="w-4 h-4" />
                           </button>
                         )}
 
                         {isSelected && maxCount > 1 && (
-                          <div className="absolute top-1 right-1 w-6 h-6 bg-rose-600 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-sm">
+                          <div className="absolute -top-2 -right-2 w-7 h-7 bg-rose-600 text-white rounded-full flex items-center justify-center text-xs font-black shadow-md">
                             {count}
                           </div>
                         )}
@@ -588,6 +736,32 @@ export default function ProductPage() {
                 <h2 className="text-xl font-black text-slate-900">معلومات التوصيل</h2>
               </div>
               <div className="space-y-4 bg-gray-50 p-5 rounded-2xl border border-gray-100">
+                <div className="flex gap-2 p-1 bg-white rounded-xl border border-gray-100 shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, deliveryMethod: 'home' })}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${
+                      formData.deliveryMethod === 'home'
+                        ? 'bg-rose-600 text-white shadow-md'
+                        : 'text-slate-500 hover:bg-slate-50'
+                    }`}
+                  >
+                    <Home className="w-4 h-4" />
+                    للمنزل
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, deliveryMethod: 'office' })}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-bold transition-all ${
+                      formData.deliveryMethod === 'office'
+                        ? 'bg-rose-600 text-white shadow-md'
+                        : 'text-slate-500 hover:bg-slate-50'
+                    }`}
+                  >
+                    <MapPin className="w-4 h-4" />
+                    للمكتب
+                  </button>
+                </div>
                 <div>
                   <input 
                     type="text" 
@@ -676,23 +850,25 @@ export default function ProductPage() {
                   </div>
                   {errors.commune && <p className="text-red-500 text-xs mt-1 mr-1 font-bold">يرجى اختيار البلدية</p>}
                 </div>
-                <div>
-                  <input 
-                    type="text" 
-                    value={formData.address}
-                    onChange={(e) => {
-                      setFormData({...formData, address: e.target.value});
-                      if (errors.address) setErrors({...errors, address: false});
-                    }}
-                    className={`w-full px-4 py-3.5 rounded-xl border outline-none transition-all bg-white font-medium placeholder:font-normal ${
-                      errors.address 
-                        ? 'border-red-500 ring-2 ring-red-100 animate-flash-red' 
-                        : 'border-gray-300 focus:ring-2 focus:ring-rose-600 focus:border-rose-600'
-                    }`}
-                    placeholder="عنوان الدار (مثال: حي 20 مسكن، رقم 5)"
-                  />
-                  {errors.address && <p className="text-red-500 text-xs mt-1 mr-1 font-bold">يرجى إدخال عنوان الدار</p>}
-                </div>
+                {formData.deliveryMethod === 'home' && (
+                  <div>
+                    <input 
+                      type="text" 
+                      value={formData.address}
+                      onChange={(e) => {
+                        setFormData({...formData, address: e.target.value});
+                        if (errors.address) setErrors({...errors, address: false});
+                      }}
+                      className={`w-full px-4 py-3.5 rounded-xl border outline-none transition-all bg-white font-medium placeholder:font-normal ${
+                        errors.address 
+                          ? 'border-red-500 ring-2 ring-red-100 animate-flash-red' 
+                          : 'border-gray-300 focus:ring-2 focus:ring-rose-600 focus:border-rose-600'
+                      }`}
+                      placeholder="عنوان الدار (مثال: حي 20 مسكن، رقم 5)"
+                    />
+                    {errors.address && <p className="text-red-500 text-xs mt-1 mr-1 font-bold">يرجى إدخال عنوان الدار</p>}
+                  </div>
+                )}
               </div>
             </div>
 
