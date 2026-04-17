@@ -12,18 +12,14 @@ export interface GeneratedProductData {
   suggestedPrice?: number;
 }
 
-export const generateProductDetailsFromImage = async (base64Image: string): Promise<GeneratedProductData | null> => {
+export const generateProductDetailsFromImages = async (base64Images: string[]): Promise<GeneratedProductData | null> => {
   try {
-    // Remove the data:image/jpeg;base64, part
-    const base64Data = base64Image.split(',')[1];
-    const mimeType = base64Image.split(';')[0].split(':')[1];
-
     const prompt = `
       أنت خبير تسويق إلكتروني (Copywriter) محترف في الجزائر. 
-      قم بتحليل صورة هذا المنتج واكتب لي التفاصيل التالية لصفحة هبوط (Landing Page) احترافية:
+      قم بتحليل صور هذا المنتج (مرفق ${base64Images.length} صور) واكتب لي التفاصيل التالية لصفحة هبوط (Landing Page) احترافية:
       1. اسم منتج جذاب ومختصر.
       2. وصف تسويقي مقنع جداً يبرز المشكلة التي يحلها المنتج والراحة التي يوفرها (يمكنك استخدام لهجة جزائرية خفيفة ومفهومة أو عربية فصحى جذابة).
-      3. قائمة بـ 4 إلى 6 ميزات (Features) رئيسية للمنتج، كل ميزة في جملة قصيرة.
+      3. قائمة بـ 4 إلى 10 ميزات (Features) رئيسية للمنتج، كل ميزة في جملة قصيرة.
       4. سعر مقترح بالدينار الجزائري (دج) بناءً على نوع المنتج (رقم فقط).
 
       يجب أن يكون الرد بصيغة JSON فقط، بهذا الشكل:
@@ -35,6 +31,17 @@ export const generateProductDetailsFromImage = async (base64Image: string): Prom
       }
     `;
 
+    const imageParts = base64Images.map(img => {
+      const base64Data = img.split(',')[1];
+      const mimeType = img.split(';')[0].split(':')[1];
+      return {
+        inlineData: {
+          mimeType,
+          data: base64Data
+        }
+      };
+    });
+
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [
@@ -42,12 +49,7 @@ export const generateProductDetailsFromImage = async (base64Image: string): Prom
           role: 'user',
           parts: [
             { text: prompt },
-            {
-              inlineData: {
-                mimeType,
-                data: base64Data
-              }
-            }
+            ...imageParts
           ]
         }
       ],
@@ -62,7 +64,7 @@ export const generateProductDetailsFromImage = async (base64Image: string): Prom
     }
     return null;
   } catch (error) {
-    console.error("Error generating product details:", error);
+    console.error("Error generating product details from multiple images:", error);
     return null;
   }
 };

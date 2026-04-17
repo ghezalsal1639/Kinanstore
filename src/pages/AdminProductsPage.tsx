@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getProducts, deleteProduct, updateProduct, Product } from '../lib/data';
-import { Package, Plus, Trash2, Edit2, Image as ImageIcon, ArrowRight, Upload, X, CheckCircle, XCircle, LogOut, Link as LinkIcon, Crop as CropIcon, Sparkles } from 'lucide-react';
+import { Package, Plus, Trash2, Edit2, Image as ImageIcon, ArrowRight, Upload, X, CheckCircle, XCircle, LogOut, Link as LinkIcon, Crop as CropIcon, Sparkles, RefreshCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../lib/AuthContext';
 import ReactCrop, { type Crop, type PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
-import { generateProductDetailsFromImage } from '../lib/gemini';
+import { generateProductDetailsFromImages } from '../lib/gemini';
 
 const compressImage = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -19,8 +19,9 @@ const compressImage = (file: File): Promise<string> => {
       img.src = event.target?.result as string;
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 800;
-        const MAX_HEIGHT = 800;
+        // Aggressive compression to fit more images in Firestore (1MB limit)
+        const MAX_WIDTH = 600; 
+        const MAX_HEIGHT = 600;
         let width = img.width;
         let height = img.height;
 
@@ -40,7 +41,8 @@ const compressImage = (file: File): Promise<string> => {
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.7));
+        // Using lower quality (0.5) to ensure we can store many images within the 1MB Firestore limit
+        resolve(canvas.toDataURL('image/jpeg', 0.5));
       };
       img.onerror = (error) => reject(error);
     };
@@ -209,17 +211,19 @@ export default function AdminProductsPage() {
   };
 
   const handleGenerateAI = async () => {
-    const firstImage = mediaFiles.find(m => m.status === 'completed' && m.previewUrl && !m.file.type.startsWith('video/'));
-    if (!firstImage) {
+    const validImages = mediaFiles.filter(m => m.status === 'completed' && m.previewUrl && !m.file.type.startsWith('video/'));
+    if (validImages.length === 0) {
       toast.error('يرجى رفع صورة المنتج أولاً لاستخدام الذكاء الاصطناعي');
       return;
     }
 
     setIsGenerating(true);
-    const toastId = toast.loading('جاري تحليل الصورة وتوليد الوصف...');
+    const toastId = toast.loading('جاري تحليل الصور وتوليد الوصف...');
     
     try {
-      const data = await generateProductDetailsFromImage(firstImage.previewUrl!);
+      // Analyze up to 10 images for better context without overwhelming the prompt
+      const imageBatch = validImages.slice(0, 10).map(m => m.previewUrl!);
+      const data = await generateProductDetailsFromImages(imageBatch);
       if (data) {
         setName(data.name);
         setDescription(data.description);
@@ -586,60 +590,55 @@ export default function AdminProductsPage() {
                     </label>
                   </div>
                   
-                  {/* Uploaded Media List */}
+                  {/* Uploaded Media List - Compact Grid for supporting 20+ images */}
                   {mediaFiles.length > 0 && (
-                    <div className="mt-4 flex flex-col gap-3">
+                    <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
                       {mediaFiles.map((item) => (
-                        <div key={item.id} className="flex items-center gap-4 bg-white border border-slate-200 p-3 rounded-xl shadow-sm">
-                          <div className="w-16 h-16 shrink-0 rounded-lg overflow-hidden bg-slate-100 flex items-center justify-center">
-                            {item.previewUrl ? (
-                              item.file.type.startsWith('video/') ? (
-                                <video src={item.previewUrl} className="w-full h-full object-cover" />
-                              ) : (
-                                <img src={item.previewUrl} alt="preview" className="w-full h-full object-cover" />
-                              )
-                            ) : (
-                              <ImageIcon className="w-6 h-6 text-slate-300" />
-                            )}
-                          </div>
+                        <div key={item.id} className="relative aspect-square bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm group">
+                          {item.previewUrl ? (
+                            <img src={item.previewUrl} alt="preview" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-slate-50">
+                              <ImageIcon className="w-6 h-6 text-slate-300 animate-pulse" />
+                            </div>
+                          )}
                           
-                          <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-center mb-1">
-                              <p className="text-sm font-medium text-slate-700 truncate" dir="ltr">{item.file.name}</p>
-                              {item.status === 'completed' && <CheckCircle className="w-4 h-4 text-emerald-500" />}
-                              {item.status === 'error' && <XCircle className="w-4 h-4 text-red-500" />}
-                            </div>
-                            
-                            <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                              <div 
-                                className={`h-full transition-all duration-300 ${item.status === 'error' ? 'bg-red-500' : item.status === 'completed' ? 'bg-emerald-500' : 'bg-blue-500'}`}
-                                style={{ width: `${item.progress}%` }}
-                              ></div>
-                            </div>
-                            <div className="flex justify-between items-center mt-1">
-                              <span className="text-xs text-slate-500">{Math.round(item.progress)}%</span>
-                              <span className="text-xs text-slate-500">{(item.file.size / (1024 * 1024)).toFixed(2)} MB</span>
-                            </div>
+                          {/* Status Indicator */}
+                          <div className="absolute top-1 left-1">
+                            {item.status === 'completed' && <CheckCircle className="w-4 h-4 text-emerald-500 bg-white rounded-full" />}
+                            {item.status === 'error' && <XCircle className="w-4 h-4 text-red-500 bg-white rounded-full" />}
                           </div>
 
-                          <div className="flex items-center gap-1">
-                            {item.status === 'completed' && item.previewUrl && !item.file.type.startsWith('video/') && (
+                          {/* Action Overlay */}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100 gap-1">
+                            {item.status === 'completed' && item.previewUrl && (
                               <button
                                 type="button"
                                 onClick={() => openCropModal(item.id, item.previewUrl!)}
-                                className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                                title="قص الصورة"
+                                className="p-1 px-2 bg-white text-indigo-600 rounded-md text-[10px] font-bold shadow-sm hover:bg-slate-50"
                               >
-                                <CropIcon className="w-5 h-5" />
+                                قص
                               </button>
                             )}
                             <button
                               type="button"
                               onClick={() => removeMedia(item.id)}
-                              className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                              className="p-1 px-2 bg-white text-red-600 rounded-md text-[10px] font-bold shadow-sm hover:bg-slate-50"
                             >
-                              <Trash2 className="w-5 h-5" />
+                              حذف
                             </button>
+                          </div>
+                          
+                          {/* Progress Bar for Uploading */}
+                          {item.status === 'uploading' && (
+                            <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-100">
+                              <div className="bg-blue-500 h-full transition-all" style={{ width: `${item.progress}%` }}></div>
+                            </div>
+                          )}
+
+                          {/* Order Number */}
+                          <div className="absolute bottom-1 right-1 bg-black/50 text-white text-[8px] w-4 h-4 rounded-full flex items-center justify-center font-bold backdrop-blur-sm">
+                            {mediaFiles.indexOf(item) + 1}
                           </div>
                         </div>
                       ))}
@@ -648,20 +647,21 @@ export default function AdminProductsPage() {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
                 <button 
                   type="button"
                   onClick={() => { setIsAdding(false); resetForm(); }}
-                  className="px-6 py-3 rounded-xl font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+                  className="px-6 py-3 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition-colors"
                 >
                   إلغاء
                 </button>
                 <button 
                   type="submit"
                   disabled={isSubmitting || mediaFiles.some(m => m.status === 'uploading')}
-                  className="bg-slate-900 text-white px-8 py-3 rounded-xl shadow-sm hover:bg-slate-800 transition-colors font-medium disabled:opacity-50"
+                  className="bg-slate-900 text-white px-8 py-3 rounded-xl shadow-sm hover:bg-slate-800 transition-colors font-medium disabled:opacity-50 flex items-center gap-2"
                 >
-                  {isSubmitting ? 'جاري الحفظ...' : 'حفظ المنتج'}
+                  {isSubmitting && <RefreshCcw className="w-4 h-4 animate-spin" />}
+                  {isSubmitting ? 'جاري الحفظ...' : (editingId ? 'تحديث المنتج' : 'حفظ المنتج')}
                 </button>
               </div>
             </form>

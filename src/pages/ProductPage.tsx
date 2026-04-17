@@ -306,15 +306,17 @@ export default function ProductPage() {
           
           {/* Dots Indicator */}
           {productImages.length > 1 && (
-            <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
-              {productImages.map((_, idx) => (
-                <div 
-                  key={idx} 
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    activeImage === idx ? 'bg-rose-600 w-6' : 'bg-white/80 w-2 shadow-sm'
-                  }`} 
-                />
-              ))}
+            <div className="absolute bottom-4 left-0 right-0 flex justify-center px-4">
+              <div className="flex gap-1.5 max-w-full overflow-x-auto py-1 px-2 no-scrollbar scroll-smooth">
+                {productImages.map((_, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`h-1.5 rounded-full transition-all duration-300 shrink-0 ${
+                      activeImage === idx ? 'bg-rose-600 w-5' : 'bg-white/90 w-1.5 shadow-sm'
+                    }`} 
+                  />
+                ))}
+              </div>
             </div>
           )}
 
