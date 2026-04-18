@@ -274,8 +274,8 @@ export default function AdminProductsPage() {
         oldPrice: oldPrice ? Number(oldPrice) : null,
         variantName: variantName.trim() || null,
         variantOptions: optionsList.length > 0 ? optionsList : null,
-        offer2Price: offer2Price ? Number(offer2Price) : null,
-        offer4Price: offer4Price ? Number(offer4Price) : null,
+        offer2Price: offer2Price && !isNaN(Number(offer2Price)) ? Number(offer2Price) : null,
+        offer4Price: offer4Price && !isNaN(Number(offer4Price)) ? Number(offer4Price) : null,
         features: features.filter(f => f.trim() !== ''),
         isSecretPackaging,
         media: completedMedia,
@@ -309,8 +309,8 @@ export default function AdminProductsPage() {
       setOldPrice(product.oldPrice ? product.oldPrice.toString() : '');
       setVariantName(product.variantName || '');
       setVariantOptions(product.variantOptions && Array.isArray(product.variantOptions) ? product.variantOptions.join(', ') : '');
-      setOffer2Price(product.offer2Price ? product.offer2Price.toString() : '');
-      setOffer4Price(product.offer4Price ? product.offer4Price.toString() : '');
+      setOffer2Price(product.offer2Price !== undefined && product.offer2Price !== null ? product.offer2Price.toString() : '');
+      setOffer4Price(product.offer4Price !== undefined && product.offer4Price !== null ? product.offer4Price.toString() : '');
       setFeatures(product.features && product.features.length > 0 ? product.features : ['']);
       setIsSecretPackaging(product.isSecretPackaging || false);
       
@@ -706,12 +706,30 @@ export default function AdminProductsPage() {
                 
                 <div className="p-5 flex-1 flex flex-col">
                   <h3 className="font-bold text-lg text-slate-900 mb-1">{product.name}</h3>
-                  <div className="flex items-end gap-2 mb-3">
+                  <div className="flex items-end gap-2 mb-1">
                     <span className="font-black text-rose-600 text-xl">{product.price} دج</span>
                     {product.oldPrice && (
                       <span className="text-sm text-slate-400 line-through mb-0.5">{product.oldPrice} دج</span>
                     )}
                   </div>
+                  
+                  {/* Display offer prices for verification */}
+                  {(product.offer2Price || product.offer4Price) && (
+                    <div className="flex flex-col gap-1 mb-3 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                      {product.offer2Price && (
+                        <div className="flex justify-between text-[10px] text-slate-600">
+                          <span>عرض 2 حبات:</span>
+                          <span className="font-bold text-amber-600">{product.offer2Price} دج</span>
+                        </div>
+                      )}
+                      {product.offer4Price && (
+                        <div className="flex justify-between text-[10px] text-slate-600">
+                          <span>عرض 4 حبات:</span>
+                          <span className="font-bold text-amber-600">{product.offer4Price} دج</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   
                   <div className="flex flex-wrap gap-1 mb-4">
                     {product.colors && product.colors.length > 0 && (
