@@ -274,6 +274,8 @@ export default function AdminProductsPage() {
         oldPrice: oldPrice ? Number(oldPrice) : null,
         variantName: variantName.trim() || null,
         variantOptions: optionsList.length > 0 ? optionsList : null,
+        offer2Price: offer2Price ? Number(offer2Price) : null,
+        offer4Price: offer4Price ? Number(offer4Price) : null,
         features: features.filter(f => f.trim() !== ''),
         isSecretPackaging,
         media: completedMedia,
