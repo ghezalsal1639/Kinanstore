@@ -4,7 +4,8 @@ import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { saveOrder, getProduct, Product, subscribeToAppSettings, AppSettings } from '../lib/data';
+import { useAuth } from '../lib/AuthContext';
+import { saveOrder, getProduct, Product } from '../lib/data';
 import { ALGERIA_CITIES, Wilaya } from '../lib/algeria-cities';
 
 export default function ProductPage() {
@@ -57,14 +58,9 @@ export default function ProductPage() {
     return () => clearInterval(timer);
   }, [id]);
   
+  const { appSettings } = useAuth();
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [appSettings, setAppSettings] = useState<AppSettings>({});
   
-  useEffect(() => {
-    const unsubscribe = subscribeToAppSettings(setAppSettings);
-    return () => unsubscribe();
-  }, []);
-
   const [offers, setOffers] = useState<any[]>([]);
   const [variants, setVariants] = useState<any[]>([]);
   const [variantType, setVariantType] = useState<'colors' | 'sizes' | 'none'>('none');

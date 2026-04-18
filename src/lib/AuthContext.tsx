@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { auth } from './firebase';
 import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, User, signInAnonymously } from 'firebase/auth';
-import { Helper, subscribeToHelpers, findHelperByEmail } from './data';
+import { Helper, subscribeToHelpers, findHelperByEmail, AppSettings, subscribeToAppSettings } from './data';
 
 interface AuthContextType {
   user: User | null;
@@ -10,6 +10,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isHelper: boolean;
   isStaff: boolean;
+  appSettings: AppSettings;
   login: () => Promise<void>;
   helperLogin: (email: string, pass: string) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -22,9 +23,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [helperUser, setHelperUser] = useState<Helper | null>(null);
   const [loading, setLoading] = useState(true);
   const [helpers, setHelpers] = useState<Helper[]>([]);
+  const [appSettings, setAppSettings] = useState<AppSettings>({});
 
   useEffect(() => {
     let unsubscribeHelpers: (() => void) | undefined;
+
+    // Global settings subscription (once per app lifetime)
+    const unsubscribeSettings = subscribeToAppSettings((settings) => {
+      setAppSettings(settings);
+    });
 
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -57,16 +64,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } else if (!currentUser) {
         setHelperUser(null);
         localStorage.removeItem('kk_helper_session');
+        if (unsubscribeHelpers) {
+          unsubscribeHelpers();
+          unsubscribeHelpers = undefined;
+        }
       }
     });
 
     return () => {
       unsubscribeAuth();
+      unsubscribeSettings();
       if (unsubscribeHelpers) unsubscribeHelpers();
     };
   }, []);
 
-  const login = async () => {
+  const login = useCallback(async () => {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
@@ -74,9 +86,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.error("Login failed", error);
       throw error;
     }
-  };
+  }, []);
 
-  const helperLogin = async (email: string, pass: string) => {
+  const helperLogin = useCallback(async (email: string, pass: string) => {
     try {
       // 1. Sign in anonymously first to get permission to query the helpers collection
       if (!auth.currentUser) {
@@ -121,27 +133,40 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       throw e;
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await signOut(auth);
     setHelperUser(null);
     localStorage.removeItem('kk_helper_session');
-  };
+  }, []);
 
-  const admins = [
+  const admins = useMemo(() => [
     'salimgh1639@gmail.com', 
     'salimgh1639-sys@gmail.com', 
     'ghezalsal1639@gmail.com'
-  ];
+  ], []);
 
   const userEmail = user?.email?.toLowerCase() || '';
-  const isAdmin = !!(user && !user.isAnonymous && admins.includes(userEmail));
+  const isAdmin = useMemo(() => !!(user && !user.isAnonymous && admins.includes(userEmail)), [user, userEmail, admins]);
   const isHelper = !!helperUser;
   const isStaff = isAdmin || isHelper;
 
+  const value = useMemo(() => ({
+    user,
+    helperUser,
+    loading,
+    isAdmin,
+    isHelper,
+    isStaff,
+    appSettings,
+    login,
+    helperLogin,
+    logout
+  }), [user, helperUser, loading, isAdmin, isHelper, isStaff, appSettings, login, helperLogin, logout]);
+
   return (
-    <AuthContext.Provider value={{ user, helperUser, loading, isAdmin, isHelper, isStaff, login, helperLogin, logout }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

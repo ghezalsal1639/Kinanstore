@@ -33,20 +33,15 @@ export default function AdminPageWrapper() {
 function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
-  const { logout, isAdmin, isHelper } = useAuth();
+  const { logout, isAdmin, isHelper, appSettings } = useAuth();
   const [showSettings, setShowSettings] = useState(false);
   const [helpers, setHelpers] = useState<Helper[]>([]);
   const [newHelperEmail, setNewHelperEmail] = useState('');
   const [newHelperPassword, setNewHelperPassword] = useState('');
-  const [appSettings, setAppSettings] = useState<AppSettings>({});
 
   useEffect(() => {
     const unsubscribeOrders = subscribeToOrders((data) => {
       setOrders(data || []);
-    });
-
-    const unsubscribeSettings = subscribeToAppSettings((settings) => {
-      setAppSettings(settings);
     });
 
     let unsubscribeHelpers: (() => void) | undefined;
@@ -58,7 +53,6 @@ function AdminPage() {
 
     return () => {
       unsubscribeOrders();
-      unsubscribeSettings();
       if (unsubscribeHelpers) unsubscribeHelpers();
     };
   }, [isAdmin]);

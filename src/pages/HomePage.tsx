@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { getProducts, Product } from '../lib/data';
+import { getFirstProduct, Product } from '../lib/data';
 import { Package } from 'lucide-react';
 
 export default function HomePage() {
@@ -10,9 +10,9 @@ export default function HomePage() {
   useEffect(() => {
     const fetchFirstProduct = async () => {
       try {
-        const products = await getProducts();
-        if (products && products.length > 0) {
-          setFirstProductId(products[0].id);
+        const product = await getFirstProduct();
+        if (product) {
+          setFirstProductId(product.id);
         }
       } catch (error) {
         console.error("Error fetching products for home redirect:", error);

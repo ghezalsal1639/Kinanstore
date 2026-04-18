@@ -6,17 +6,11 @@ import toast from 'react-hot-toast';
 import { subscribeToAppSettings, AppSettings } from '../lib/data';
 
 export default function AdminLogin() {
-  const { user, helperUser, isAdmin, isHelper, login, helperLogin, loading } = useAuth();
+  const { user, helperUser, isAdmin, isHelper, login, helperLogin, loading, appSettings } = useAuth();
   const [loginType, setLoginType] = useState<'admin' | 'staff'>('admin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [appSettings, setAppSettings] = useState<AppSettings>({});
-
-  useEffect(() => {
-    const unsubscribe = subscribeToAppSettings(setAppSettings);
-    return () => unsubscribe();
-  }, []);
 
   if (loading) {
     return <div className="min-h-screen bg-slate-100" />;

@@ -65,13 +65,7 @@ export default function AdminProductsPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
-  const { logout } = useAuth();
-  const [appSettings, setAppSettings] = useState<AppSettings>({});
-
-  useEffect(() => {
-    const unsubscribe = subscribeToAppSettings(setAppSettings);
-    return () => unsubscribe();
-  }, []);
+  const { logout, appSettings } = useAuth();
 
   // Form state
   const [name, setName] = useState('');
@@ -743,7 +737,7 @@ export default function AdminProductsPage() {
                               baseUrl = `https://${window.location.hostname}`;
                             } else {
                               // Fallback to the known Vercel domain if we're in AI Studio
-                              baseUrl = import.meta.env.VITE_PUBLIC_DOMAIN || 'https://kkstore-lac.vercel.app';
+                              baseUrl = import.meta.env.VITE_PUBLIC_DOMAIN || 'https://kinanstore-lac.vercel.app';
                             }
                             
                             baseUrl = baseUrl.replace(/\/$/, '');

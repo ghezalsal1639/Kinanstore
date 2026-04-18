@@ -1,4 +1,4 @@
-import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, getDocFromServer, setDoc, where } from 'firebase/firestore';
+import { collection, getDocs, getDoc, addDoc, updateDoc, deleteDoc, doc, query, orderBy, onSnapshot, getDocFromServer, setDoc, where, limit } from 'firebase/firestore';
 import { db, auth } from './firebase';
 
 enum OperationType {
@@ -61,7 +61,7 @@ async function testConnection() {
     }
   }
 }
-testConnection();
+// testConnection(); // Removed to save reads
 
 export type OrderStatus = 'new' | 'confirmed' | 'shipped' | 'delivered' | 'returned';
 
@@ -98,15 +98,33 @@ export interface Product {
   date: string;
 }
 
-export const getProducts = async (): Promise<Product[]> => {
+export const getProducts = async (limitCount?: number): Promise<Product[]> => {
   const path = 'products';
   try {
-    const q = query(collection(db, path), orderBy('date', 'desc'));
+    let q = query(collection(db, path), orderBy('date', 'desc'));
+    if (limitCount) {
+      q = query(q, limit(limitCount));
+    }
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, path);
     return [];
+  }
+};
+
+export const getFirstProduct = async (): Promise<Product | null> => {
+  const path = 'products';
+  try {
+    const q = query(collection(db, path), orderBy('date', 'desc'), limit(1));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Product;
+    }
+    return null;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, path);
+    return null;
   }
 };
 
@@ -155,9 +173,9 @@ export const getOrders = async (): Promise<Order[]> => {
   }
 };
 
-export const subscribeToOrders = (callback: (orders: Order[]) => void) => {
+export const subscribeToOrders = (callback: (orders: Order[]) => void, limitCount: number = 200) => {
   const path = 'orders';
-  const q = query(collection(db, path), orderBy('date', 'desc'));
+  const q = query(collection(db, path), orderBy('date', 'desc'), limit(limitCount));
   return onSnapshot(q, (snapshot) => {
     const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
     callback(orders);
