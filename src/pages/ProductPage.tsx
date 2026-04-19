@@ -370,7 +370,7 @@ export default function ProductPage() {
 
       {/* Header */}
       <header className="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100 shadow-sm">
-        <div className="max-w-md mx-auto px-4 h-28 flex items-center">
+        <div className="max-w-2xl mx-auto px-4 h-28 flex items-center">
           <div className="flex-1 flex flex-col items-center text-center pr-6">
             <span className="font-black text-2xl tracking-tighter text-brand-teal uppercase leading-none">{appSettings.storeName || "KINAN STORE"}</span>
             <span className="text-[10px] font-bold text-brand-gold uppercase tracking-widest mt-1">Premium Quality</span>
@@ -381,12 +381,12 @@ export default function ProductPage() {
         </div>
       </header>
 
-      <main className="max-w-md mx-auto bg-white min-h-screen shadow-xl">
+      <main className="max-w-2xl mx-auto bg-white min-h-screen shadow-xl">
         {/* Product Image Gallery (Swipeable) */}
-        <div className="relative w-full aspect-square bg-white group p-4" dir="ltr">
+        <div className="relative w-full aspect-square bg-white group" dir="ltr">
           <div 
             ref={scrollRef}
-            className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar w-full h-full scroll-smooth rounded-[2.5rem] shadow-inner bg-slate-50"
+            className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar w-full h-full scroll-smooth shadow-inner bg-slate-50"
             onScroll={handleManualScroll}
             onTouchStart={() => setIsAutoPlaying(false)}
             onMouseDown={() => setIsAutoPlaying(false)}
