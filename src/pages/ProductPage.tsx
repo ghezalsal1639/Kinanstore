@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ShieldCheck, Package, Truck, Star, CheckCircle2, Lock, ChevronDown, X, Sparkles, CheckCircle, MapPin, Home, ChevronLeft, ChevronRight, Clock, Flame, ShoppingBag, Shield } from 'lucide-react';
+import { ShieldCheck, Package, Truck, Star, CheckCircle2, Lock, ChevronDown, X, Sparkles, CheckCircle, MapPin, Home, ChevronLeft, ChevronRight, Clock, Flame, ShoppingBag, Shield, Minus, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'motion/react';
@@ -7,6 +7,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import { saveOrder, getProduct, Product } from '../lib/data';
 import { ALGERIA_CITIES, Wilaya } from '../lib/algeria-cities';
+import { trackPurchase } from '../lib/pixel';
 
 export default function ProductPage() {
   const { id } = useParams<{ id: string }>();
@@ -329,6 +330,9 @@ export default function ProductPage() {
         totalPrice: selectedOffer?.price || product.price,
       });
 
+      // Track Facebook Pixel Purchase
+      trackPurchase(selectedOffer?.price || product.price);
+
       confetti({
         particleCount: 150,
         spread: 70,
@@ -370,12 +374,12 @@ export default function ProductPage() {
 
       {/* Header */}
       <header className="bg-white/90 backdrop-blur-md sticky top-0 z-40 border-b border-slate-100 shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 h-28 flex items-center">
+        <div className="max-w-2xl mx-auto px-4 h-16 md:h-20 flex items-center">
           <div className="flex-1 flex flex-col items-center text-center pr-6">
-            <span className="font-black text-2xl tracking-tighter text-brand-teal uppercase leading-none">{appSettings.storeName || "KINAN STORE"}</span>
-            <span className="text-[10px] font-bold text-brand-gold uppercase tracking-widest mt-1">Premium Quality</span>
+            <span className="font-black text-xl md:text-2xl tracking-tighter text-brand-teal uppercase leading-none">{appSettings.storeName || "KINAN STORE"}</span>
+            <span className="text-[9px] md:text-[10px] font-bold text-brand-gold uppercase tracking-widest mt-0.5 md:mt-1">Premium Quality</span>
           </div>
-          <div className="w-24 h-24 flex items-center justify-center p-1 shrink-0">
+          <div className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center p-1 shrink-0">
             <img src={appSettings.logoUrl || "/logo.png"} alt="Logo" className="w-full h-full object-contain" />
           </div>
         </div>
@@ -550,24 +554,7 @@ export default function ProductPage() {
             {product.description || 'منتج عالي الجودة ومضمون. اطلب الآن واستفد من العرض.'}
           </p>
 
-          {product.features && product.features.length > 0 && (
-            <div className="bg-slate-50 rounded-2xl p-5 mb-2 mt-4">
-              <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-rose-500" />
-                لماذا تختار هذا المنتج؟
-              </h3>
-              <ul className="space-y-3">
-                {product.features.map((feature, idx) => (
-                  <li key={idx} className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
-                      <CheckCircle className="w-4 h-4" />
-                    </div>
-                    <span className="text-slate-700 text-sm font-medium leading-relaxed">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+
         </div>
 
         {/* Trust Badges */}
@@ -700,38 +687,58 @@ export default function ProductPage() {
                             }
                           }
                         }}
-                        className={`relative flex flex-col items-center justify-center p-5 rounded-2xl border-2 transition-all cursor-pointer min-h-[90px] ${
+                        className={`relative flex flex-col items-center justify-between p-4 rounded-3xl border-2 transition-all cursor-pointer min-h-[110px] ${
                           isSelected 
-                            ? 'border-rose-600 bg-rose-50' 
+                            ? 'border-rose-600 bg-rose-50/40 shadow-sm' 
                             : 'border-slate-100 bg-slate-50 hover:bg-white hover:border-slate-200'
-                        } ${maxCount > 1 && currentTotal >= maxCount && !isSelected ? 'opacity-50 grayscale pointer-events-none' : ''}`}
+                        } ${maxCount > 1 && currentTotal >= maxCount && !isSelected ? 'opacity-60 grayscale-[40%]' : ''}`}
                       >
-                        {maxCount > 1 && isSelected && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleVariantChange(variant.id, -1);
-                            }}
-                            className="absolute -top-2 -left-2 w-7 h-7 bg-white border border-rose-200 text-rose-600 rounded-full flex items-center justify-center hover:bg-rose-100 shadow-md z-10"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        )}
-
-                        {isSelected && maxCount > 1 && (
-                          <div className="absolute -top-2 -right-2 w-7 h-7 bg-rose-600 text-white rounded-full flex items-center justify-center text-xs font-black shadow-md">
-                            {count}
-                          </div>
-                        )}
-                        
                         {isSelected && maxCount === 1 && (
-                          <div className="absolute top-2 right-2">
-                            <CheckCircle2 className="w-5 h-5 text-rose-600" />
+                          <div className="absolute top-2.5 right-2.5 bg-rose-100 text-rose-600 rounded-full p-0.5">
+                            <CheckCircle2 className="w-4 h-4 text-rose-600 fill-white" />
                           </div>
                         )}
                         
-                        <span className="font-bold text-slate-800 text-center leading-tight">{variant.name}</span>
+                        <span className="font-bold text-slate-800 text-center leading-tight mt-2 px-1 text-sm md:text-base">
+                          {variant.name}
+                        </span>
+
+                        {maxCount > 1 && (
+                          <div 
+                            className="flex items-center justify-between w-full mt-3 bg-white/80 rounded-2xl p-1 shadow-sm border border-slate-100"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => handleVariantChange(variant.id, -1)}
+                              disabled={count === 0}
+                              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+                                count > 0 
+                                  ? 'bg-rose-50 border border-rose-200/50 text-rose-600 hover:bg-rose-100 active:scale-90' 
+                                  : 'text-slate-300 opacity-40 cursor-not-allowed'
+                              }`}
+                            >
+                              <Minus className="w-3.5 h-3.5 stroke-[3]" />
+                            </button>
+
+                            <span className={`font-black text-sm text-center min-w-[20px] ${count > 0 ? 'text-rose-600' : 'text-slate-400'}`}>
+                              {count}
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() => handleVariantChange(variant.id, 1)}
+                              disabled={currentTotal >= maxCount}
+                              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
+                                currentTotal < maxCount
+                                  ? 'bg-rose-600 text-white hover:bg-rose-700 hover:shadow-md active:scale-90'
+                                  : 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                              }`}
+                            >
+                              <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -893,6 +900,26 @@ export default function ProductPage() {
               تأكيد الطلب الآن
             </button>
           </form>
+
+          {/* Moved 'Why Choose' features list section here */}
+          {product.features && product.features.length > 0 && (
+            <div className="bg-slate-50 rounded-2xl p-5 mb-6 mt-4">
+              <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-rose-500" />
+                لماذا تختار هذا المنتج؟
+              </h3>
+              <ul className="space-y-3">
+                {product.features.map((feature, idx) => (
+                  <li key={idx} className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                      <CheckCircle className="w-4 h-4" />
+                    </div>
+                    <span className="text-slate-700 text-sm font-medium leading-relaxed">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
         
         {/* Footer */}

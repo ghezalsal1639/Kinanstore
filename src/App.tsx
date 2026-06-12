@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import AdminPage from './pages/AdminPage';
@@ -8,8 +8,13 @@ import AdminLogin from './pages/AdminLogin';
 import HomePage from './pages/HomePage';
 import { AuthProvider } from './lib/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import { initPixel } from './lib/pixel';
 
 export default function App() {
+  useEffect(() => {
+    initPixel();
+  }, []);
+
   return (
     <AuthProvider>
       <BrowserRouter>
