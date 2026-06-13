@@ -31,6 +31,7 @@ export default function AdminPageWrapper() {
 }
 
 function AdminPage() {
+  const [limitCount, setLimitCount] = useState(100);
   const [orders, setOrders] = useState<Order[]>([]);
   const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
   const { logout, isAdmin, isHelper, appSettings } = useAuth();
@@ -42,7 +43,7 @@ function AdminPage() {
   useEffect(() => {
     const unsubscribeOrders = subscribeToOrders((data) => {
       setOrders(data || []);
-    });
+    }, limitCount);
 
     let unsubscribeHelpers: (() => void) | undefined;
     if (isAdmin) {
@@ -55,7 +56,11 @@ function AdminPage() {
       unsubscribeOrders();
       if (unsubscribeHelpers) unsubscribeHelpers();
     };
-  }, [isAdmin]);
+  }, [isAdmin, limitCount]);
+
+  const loadMore = () => {
+    setLimitCount(prev => prev + 100);
+  };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -392,6 +397,18 @@ function AdminPage() {
                     ))}
                   </tbody>
                 </table>
+                
+                {orders.length >= limitCount && (
+                  <div className="p-4 border-t border-slate-50 flex justify-center bg-slate-50/30">
+                    <button 
+                      onClick={loadMore}
+                      className="flex items-center gap-2 px-6 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-50 shadow-sm transition-all"
+                    >
+                      <RefreshCcw className="w-4 h-4" />
+                      تحميل المزيد من الطلبات
+                    </button>
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>

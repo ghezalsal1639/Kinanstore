@@ -103,15 +103,75 @@ export interface Product {
   date: string;
 }
 
-export const getProducts = async (limitCount?: number): Promise<Product[]> => {
+const memoryCache: Record<string, { data: any, timestamp: number }> = {};
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+function getCachedData<T>(key: string): T | null {
+  // Check memory cache first
+  const mem = memoryCache[key];
+  if (mem && (Date.now() - mem.timestamp < CACHE_DURATION)) {
+    return mem.data as T;
+  }
+
+  // Check localStorage
+  try {
+    const local = localStorage.getItem(`kk_cache_${key}`);
+    if (local) {
+      const parsed = JSON.parse(local);
+      if (Date.now() - parsed.timestamp < CACHE_DURATION) {
+        // Hydrate memory cache
+        memoryCache[key] = parsed;
+        return parsed.data as T;
+      }
+    }
+  } catch (e) {}
+
+  return null;
+}
+
+function setCachedData(key: string, data: any) {
+  const cacheEntry = { data, timestamp: Date.now() };
+  memoryCache[key] = cacheEntry;
+  try {
+    localStorage.setItem(`kk_cache_${key}`, JSON.stringify(cacheEntry));
+  } catch (e) {}
+}
+
+function invalidateCache(keyPrefix?: string) {
+  if (!keyPrefix) {
+    Object.keys(memoryCache).forEach(k => delete memoryCache[k]);
+    // Clear localStorage items starting with kk_cache_
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('kk_cache_')) {
+        localStorage.removeItem(key);
+      }
+    }
+  } else {
+    Object.keys(memoryCache).forEach(k => {
+      if (k.startsWith(keyPrefix)) delete memoryCache[k];
+    });
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(`kk_cache_${keyPrefix}`)) {
+        localStorage.removeItem(key);
+      }
+    }
+  }
+}
+
+export const getProducts = async (limitCount: number = 50): Promise<Product[]> => {
+  const cacheKey = `products_list_${limitCount}`;
+  const cached = getCachedData<Product[]>(cacheKey);
+  if (cached) return cached;
+
   const path = 'products';
   try {
-    let q = query(collection(db, path), orderBy('date', 'desc'));
-    if (limitCount) {
-      q = query(q, limit(limitCount));
-    }
+    const q = query(collection(db, path), orderBy('date', 'desc'), limit(limitCount));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+    setCachedData(cacheKey, data);
+    return data;
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, path);
     return [];
@@ -119,12 +179,18 @@ export const getProducts = async (limitCount?: number): Promise<Product[]> => {
 };
 
 export const getFirstProduct = async (): Promise<Product | null> => {
+  const cacheKey = 'first_product';
+  const cached = getCachedData<Product>(cacheKey);
+  if (cached) return cached;
+
   const path = 'products';
   try {
     const q = query(collection(db, path), orderBy('date', 'desc'), limit(1));
     const snapshot = await getDocs(q);
     if (!snapshot.empty) {
-      return { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Product;
+      const data = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Product;
+      setCachedData(cacheKey, data);
+      return data;
     }
     return null;
   } catch (error) {
@@ -134,12 +200,18 @@ export const getFirstProduct = async (): Promise<Product | null> => {
 };
 
 export const getProduct = async (id: string): Promise<Product | null> => {
+  const cacheKey = `product_${id}`;
+  const cached = getCachedData<Product>(cacheKey);
+  if (cached) return cached;
+
   const path = `products/${id}`;
   try {
     const docRef = doc(db, 'products', id);
     const productDoc = await getDoc(docRef);
     if (productDoc.exists()) {
-      return { id: productDoc.id, ...productDoc.data() } as Product;
+      const data = { id: productDoc.id, ...productDoc.data() } as Product;
+      setCachedData(cacheKey, data);
+      return data;
     }
     return null;
   } catch (error) {
@@ -152,6 +224,8 @@ export const deleteProduct = async (id: string) => {
   const path = `products/${id}`;
   try {
     await deleteDoc(doc(db, 'products', id));
+    invalidateCache('product'); // Clears 'product_' and 'products_'
+    invalidateCache('first_product');
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, path);
   }
@@ -161,15 +235,17 @@ export const updateProduct = async (id: string, data: Partial<Product>) => {
   const path = `products/${id}`;
   try {
     await updateDoc(doc(db, 'products', id), data);
+    invalidateCache('product'); // Clears 'product_' and 'products_'
+    invalidateCache('first_product');
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, path);
   }
 };
 
-export const getOrders = async (): Promise<Order[]> => {
+export const getOrders = async (limitCount: number = 100): Promise<Order[]> => {
   const path = 'orders';
   try {
-    const q = query(collection(db, path), orderBy('date', 'desc'));
+    const q = query(collection(db, path), orderBy('date', 'desc'), limit(limitCount));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
   } catch (error) {
@@ -178,7 +254,7 @@ export const getOrders = async (): Promise<Order[]> => {
   }
 };
 
-export const subscribeToOrders = (callback: (orders: Order[]) => void, limitCount: number = 200) => {
+export const subscribeToOrders = (callback: (orders: Order[]) => void, limitCount: number = 100) => {
   const path = 'orders';
   const q = query(collection(db, path), orderBy('date', 'desc'), limit(limitCount));
   return onSnapshot(q, (snapshot) => {
@@ -219,10 +295,11 @@ export interface Helper {
   password?: string;
 }
 
-export const getHelpers = async (): Promise<Helper[]> => {
+export const getHelpers = async (limitCount: number = 50): Promise<Helper[]> => {
   const path = 'helpers';
   try {
-    const snapshot = await getDocs(collection(db, 'helpers'));
+    const q = query(collection(db, 'helpers'), limit(limitCount));
+    const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Helper));
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, path);
@@ -230,9 +307,10 @@ export const getHelpers = async (): Promise<Helper[]> => {
   }
 };
 
-export const subscribeToHelpers = (callback: (helpers: Helper[]) => void) => {
+export const subscribeToHelpers = (callback: (helpers: Helper[]) => void, limitCount: number = 50) => {
   const path = 'helpers';
-  return onSnapshot(collection(db, 'helpers'), (snapshot) => {
+  const q = query(collection(db, 'helpers'), limit(limitCount));
+  return onSnapshot(q, (snapshot) => {
     callback(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Helper)));
   }, (error) => {
     handleFirestoreError(error, OperationType.LIST, path);
@@ -279,12 +357,18 @@ export interface AppSettings {
 }
 
 export const getAppSettings = async (): Promise<AppSettings> => {
+  const cacheKey = 'app_settings';
+  const cached = getCachedData<AppSettings>(cacheKey);
+  if (cached) return cached;
+
   const path = 'settings/app';
   try {
     const docRef = doc(db, 'settings', 'app');
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      return docSnap.data() as AppSettings;
+      const data = docSnap.data() as AppSettings;
+      setCachedData(cacheKey, data);
+      return data;
     }
     return {};
   } catch (error) {
@@ -298,6 +382,8 @@ export const updateAppSettings = async (settings: Partial<AppSettings>) => {
   try {
     const docRef = doc(db, 'settings', 'app');
     await setDoc(docRef, settings, { merge: true });
+    invalidateCache('app_settings');
+    localStorage.setItem('kk_app_settings_cache', JSON.stringify(settings)); // Sync with the other cache
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }

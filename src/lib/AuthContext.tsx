@@ -23,13 +23,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [helperUser, setHelperUser] = useState<Helper | null>(null);
   const [loading, setLoading] = useState(true);
-  const [helpers, setHelpers] = useState<Helper[]>([]);
   const [appSettings, setAppSettings] = useState<AppSettings>({});
   const [hasQuotaError, setHasQuotaError] = useState(false);
 
   useEffect(() => {
-    let unsubscribeHelpers: (() => void) | undefined;
-
     // Global settings subscription (once per app lifetime)
     const unsubscribeSettings = subscribeToAppSettings((settings) => {
       setAppSettings(settings);
@@ -43,20 +40,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(currentUser);
       setLoading(false);
       
-      // If we are logged in as admin, subscribe to helpers for management
-      const admins = [
-        'salimgh1639@gmail.com', 
-        'salimgh1639-sys@gmail.com', 
-        'ghezalsal1639@gmail.com'
-      ];
-      const isActuallyAdmin = !!(currentUser && !currentUser.isAnonymous && admins.includes(currentUser.email?.toLowerCase() || ''));
-
-      if (isActuallyAdmin && !unsubscribeHelpers) {
-        unsubscribeHelpers = subscribeToHelpers((data) => {
-          setHelpers(data);
-        });
-      }
-
       // Check if this anonymous user was previously logged in as a helper
       if (currentUser?.isAnonymous) {
         const savedHelper = localStorage.getItem('kk_helper_session');
@@ -70,17 +53,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } else if (!currentUser) {
         setHelperUser(null);
         localStorage.removeItem('kk_helper_session');
-        if (unsubscribeHelpers) {
-          unsubscribeHelpers();
-          unsubscribeHelpers = undefined;
-        }
       }
     });
 
     return () => {
       unsubscribeAuth();
       unsubscribeSettings();
-      if (unsubscribeHelpers) unsubscribeHelpers();
     };
   }, []);
 
