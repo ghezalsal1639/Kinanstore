@@ -5,7 +5,7 @@ declare global {
   }
 }
 
-export const FB_PIXEL_ID = import.meta.env.VITE_FB_PIXEL_ID || '856075923785226';
+export const FB_PIXEL_ID = import.meta.env.VITE_FB_PIXEL_ID || '2020070568591554';
 
 export const initPixel = () => {
   if (typeof window === 'undefined' || !FB_PIXEL_ID) return;

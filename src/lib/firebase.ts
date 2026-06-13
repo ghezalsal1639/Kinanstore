@@ -11,7 +11,7 @@ export const storage = getStorage(app);
 
 // Enable persistence to save reads and work offline
 if (typeof window !== 'undefined') {
-  enableIndexedDbPersistence(db).catch((err) => {
+  enableIndexedDbPersistence(db, { experimentalForceOwningTab: true }).catch((err) => {
     if (err.code === 'failed-precondition') {
       // Multiple tabs open, persistence can only be enabled in one tab at a time.
       console.warn('Firestore persistence failed: Multiple tabs open');
