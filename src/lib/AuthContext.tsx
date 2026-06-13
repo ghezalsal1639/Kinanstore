@@ -11,6 +11,7 @@ interface AuthContextType {
   isHelper: boolean;
   isStaff: boolean;
   appSettings: AppSettings;
+  hasQuotaError: boolean;
   login: () => Promise<void>;
   helperLogin: (email: string, pass: string) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -24,6 +25,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [helpers, setHelpers] = useState<Helper[]>([]);
   const [appSettings, setAppSettings] = useState<AppSettings>({});
+  const [hasQuotaError, setHasQuotaError] = useState(false);
 
   useEffect(() => {
     let unsubscribeHelpers: (() => void) | undefined;
@@ -31,6 +33,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Global settings subscription (once per app lifetime)
     const unsubscribeSettings = subscribeToAppSettings((settings) => {
       setAppSettings(settings);
+    }, (error: any) => {
+      if (error?.message?.includes('Quota limit exceeded')) {
+        setHasQuotaError(true);
+      }
     });
 
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
@@ -160,13 +166,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     isHelper,
     isStaff,
     appSettings,
+    hasQuotaError,
     login,
     helperLogin,
     logout
-  }), [user, helperUser, loading, isAdmin, isHelper, isStaff, appSettings, login, helperLogin, logout]);
+  }), [user, helperUser, loading, isAdmin, isHelper, isStaff, appSettings, hasQuotaError, login, helperLogin, logout]);
 
   return (
     <AuthContext.Provider value={value}>
+      {hasQuotaError && (
+        <div className="bg-red-600 text-white p-3 text-center text-sm font-bold sticky top-0 z-[100] shadow-lg flex items-center justify-center gap-2 px-4" dir="rtl">
+          <div className="w-2 h-2 bg-white rounded-full animate-pulse shrink-0"></div>
+          <span>تم تجاوز حد الاستخدام المجاني لقاعدة البيانات. تم تفعيل وضع القراءة من الذاكرة المؤقتة.</span>
+        </div>
+      )}
       {children}
     </AuthContext.Provider>
   );

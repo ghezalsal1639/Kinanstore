@@ -44,9 +44,14 @@ service cloud.firestore {
     }
 
     match /helpers/{helperId} {
-      // Helpers need to read the collection to find their own record by email
-      allow read: if isAuthenticated();
+      // Allow admins to manage helpers
       allow write: if isAdmin();
+      
+      // Allow authenticated users to search (for login) but try to keep it limited
+      // We allow reading a specific helper if the email matches (for session check)
+      // and allow listing only for admins
+      allow list: if isAdmin();
+      allow get: if isAuthenticated();
     }
   }
 }

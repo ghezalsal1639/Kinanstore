@@ -48,6 +48,11 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     operationType,
     path
   };
+  
+  if (errInfo.error.includes('Quota limit exceeded')) {
+    console.error('CRITICAL: Firestore Quota Exceeded (50k daily limit hit)');
+  }
+  
   console.error('Firestore Error: ', JSON.stringify(errInfo));
   throw new Error(JSON.stringify(errInfo));
 }
@@ -298,16 +303,34 @@ export const updateAppSettings = async (settings: Partial<AppSettings>) => {
   }
 };
 
-export const subscribeToAppSettings = (callback: (settings: AppSettings) => void) => {
+export const subscribeToAppSettings = (callback: (settings: AppSettings) => void, onError?: (error: any) => void) => {
   const path = 'settings/app';
   const docRef = doc(db, 'settings', 'app');
+  
+  // Try to load from localStorage first for instant UI response and read saving
+  const cached = localStorage.getItem('kk_app_settings_cache');
+  if (cached) {
+    try {
+      callback(JSON.parse(cached));
+    } catch (e) {}
+  }
+
   return onSnapshot(docRef, (docSnap) => {
     if (docSnap.exists()) {
-      callback(docSnap.data() as AppSettings);
+      const data = docSnap.data() as AppSettings;
+      localStorage.setItem('kk_app_settings_cache', JSON.stringify(data));
+      callback(data);
     } else {
       callback({});
     }
   }, (error) => {
-    handleFirestoreError(error, OperationType.GET, path);
+    // If it's a quota error, don't keep retrying or spamming
+    if (error.code === 'resource-exhausted') {
+      console.warn("Firestore quota reached - using cached settings");
+      if (onError) onError(error);
+    } else {
+      handleFirestoreError(error, OperationType.GET, path);
+      if (onError) onError(error);
+    }
   });
 };
